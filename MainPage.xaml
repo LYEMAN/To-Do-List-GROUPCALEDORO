@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="MauiApp2.MainPage">
+
+    <VerticalStackLayout Spacing="10" Padding="10">
+
+        <!-- Input Section -->
+        <VerticalStackLayout Spacing="10">
+
+            <Entry x:Name="titleEntry"
+                   Placeholder="Title"
+                   ReturnType="Next"
+                   MaxLength="50"/>
+
+            <Editor x:Name="detailsEditor"
+                    Placeholder="Details"
+                    MaxLength="240"
+                    HeightRequest="100"/>
+
+            <Button x:Name="addBtn"
+                    Text="Add"
+                    Clicked="AddToDoItem"/>
+
+            <Button x:Name="editBtn"
+                    IsVisible="False"
+                    Text="Edit"
+                    Clicked="EditToDoItem"/>
+
+            <Button x:Name="cancelBtn"
+                    IsVisible="False"
+                    Text="Cancel Edit"
+                    Clicked="CancelEdit"/>
+
+        </VerticalStackLayout>
+
+        <!-- List Section -->
+        <ListView x:Name="todoLV"
+                  HasUnevenRows="True"
+                  ItemSelected="TodoLV_OnItemSelected">
+
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <ViewCell>
+                        <Grid Padding="10" RowSpacing="5">
+
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="8*"/>
+                                <ColumnDefinition Width="2*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Label Grid.Row="0"
+                                   Grid.Column="0"
+                                   FontSize="16"
+                                   TextColor="Black"
+                                   Text="{Binding Name}" />
+
+                            <Label Grid.Row="1"
+                                   Grid.Column="0"
+                                   FontSize="14"
+                                   TextColor="Black"
+                                   Text="{Binding Notes}" />
+
+                            <Button Grid.Row="0"
+                                    Grid.RowSpan="2"
+                                    Grid.Column="1"
+                                    Text="Delete"
+                                    CommandParameter="{Binding ID}"
+                                    Clicked="DeleteToDoItem"/>
+                        </Grid>
+                    </ViewCell>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+
+        </ListView>
+
+    </VerticalStackLayout>
+</ContentPage>
