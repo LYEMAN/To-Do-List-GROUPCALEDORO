@@ -29,11 +29,13 @@ namespace MauiApp2
 		public async Task<List<ToDoItem>> GetItemsNotDoneAsync()
 		{
 			await Init();
-			// return items that are NOT done
 			return await database.Table<ToDoItem>().Where(t => !t.Done).ToListAsync();
+		}
 
-			// SQL queries are also possible
-			//return await Database.QueryAsync<ToDoItem>("SELECT * FROM [ToDoItem] WHERE [Done] = 0");
+		public async Task<List<ToDoItem>> GetItemsDoneAsync()
+		{
+			await Init();
+			return await database.Table<ToDoItem>().Where(t => t.Done).ToListAsync();
 		}
 
 		public async Task<ToDoItem> GetItemAsync(int id)

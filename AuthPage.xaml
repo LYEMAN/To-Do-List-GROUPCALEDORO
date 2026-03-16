@@ -3,21 +3,23 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Class="MauiApp2.AuthPage"
+    BackgroundColor="#f7f8fa"
     Title="Authentication">
 
-    <VerticalStackLayout Spacing="12" Padding="20">
+    <ScrollView>
+        <VerticalStackLayout Spacing="16" Padding="20" VerticalOptions="CenterAndExpand">
+            <Label Text="Welcome" FontSize="28" FontAttributes="Bold" TextColor="#111827" HorizontalOptions="Center" />
+            <Label Text="Login or create your account" FontSize="14" TextColor="#6b7280" HorizontalOptions="Center" />
 
-        <Label Text="Welcome" FontSize="24" HorizontalOptions="Center" />
-
-        <Entry x:Name="usernameEntry" Placeholder="Username" />
-        <Entry x:Name="passwordEntry" Placeholder="Password" IsPassword="True" />
-
-        <Label x:Name="messageLabel" TextColor="Red" HorizontalOptions="Center" />
-
-        <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
-            <Button Text="Login" Clicked="OnLoginClicked" />
-            <Button Text="Sign Up" Clicked="OnSignUpClicked" />
-        </HorizontalStackLayout>
-
-    </VerticalStackLayout>
+            <Frame Padding="14" CornerRadius="12" BackgroundColor="#FFFFFF" BorderColor="#e5e7eb" HasShadow="False">
+                <VerticalStackLayout Spacing="10">
+                    <Entry x:Name="usernameEntry" Placeholder="Username" BackgroundColor="#f9fafb" />
+                    <Entry x:Name="passwordEntry" Placeholder="Password" IsPassword="True" BackgroundColor="#f9fafb" />
+                    <Label x:Name="messageLabel" TextColor="Red" HorizontalOptions="Center" />
+                    <Button Text="Login" Clicked="OnLoginClicked" BackgroundColor="#1f2937" TextColor="White" CornerRadius="8" />
+                    <Button Text="Sign Up" Clicked="OnSignUpClicked" BackgroundColor="#e5e7eb" TextColor="#111827" CornerRadius="8" />
+                </VerticalStackLayout>
+            </Frame>
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>
