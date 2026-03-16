@@ -13,8 +13,8 @@
 
             <Frame Padding="14" CornerRadius="12" BackgroundColor="#FFFFFF" BorderColor="#e5e7eb" HasShadow="False">
                 <VerticalStackLayout Spacing="10">
-                    <Entry x:Name="usernameEntry" Placeholder="Username" BackgroundColor="#f9fafb" CornerRadius="8" />
-                    <Entry x:Name="passwordEntry" Placeholder="Password" IsPassword="True" BackgroundColor="#f9fafb" CornerRadius="8" />
+                    <Entry x:Name="usernameEntry" Placeholder="Username" BackgroundColor="#f9fafb" />
+                    <Entry x:Name="passwordEntry" Placeholder="Password" IsPassword="True" BackgroundColor="#f9fafb" />
                     <Label x:Name="messageLabel" TextColor="Red" HorizontalOptions="Center" />
                     <Button Text="Login" Clicked="OnLoginClicked" BackgroundColor="#1f2937" TextColor="White" CornerRadius="8" />
                     <Button Text="Sign Up" Clicked="OnSignUpClicked" BackgroundColor="#e5e7eb" TextColor="#111827" CornerRadius="8" />

@@ -77,6 +77,20 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private async void MarkDoneToDoItem(object sender, EventArgs e)
+    {
+        if (sender is Button btn && btn.CommandParameter is int id)
+        {
+            var item = items.FirstOrDefault(x => x.ID == id);
+            if (item != null)
+            {
+                item.Done = true;
+                await db.SaveItemAsync(item);
+                items.Remove(item);
+            }
+        }
+    }
+
     private void TodoLV_OnItemSelected(object sender, SelectedItemChangedEventArgs e)
     {
         selectedItem = e.SelectedItem as ToDoItem;
