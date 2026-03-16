@@ -13,8 +13,8 @@
 
             <Frame BackgroundColor="#ffffff" BorderColor="#e5e7eb" CornerRadius="12" Padding="14" HasShadow="False">
                 <VerticalStackLayout Spacing="8">
-                    <Entry x:Name="titleEntry" Placeholder="Task title" BackgroundColor="#f9fafb" CornerRadius="8" />
-                    <Editor x:Name="detailsEditor" Placeholder="Details" HeightRequest="90" BackgroundColor="#f9fafb" CornerRadius="8"/>
+                    <Entry x:Name="titleEntry" Placeholder="Task title" BackgroundColor="#f9fafb" />
+                    <Editor x:Name="detailsEditor" Placeholder="Details" HeightRequest="90" BackgroundColor="#f9fafb"/>
                     <HorizontalStackLayout Spacing="8">
                         <Button x:Name="addBtn" Text="Add" Clicked="AddToDoItem" BackgroundColor="#111827" TextColor="White" CornerRadius="8" HorizontalOptions="Fill"/>
                         <Button x:Name="editBtn" IsVisible="False" Text="Save" Clicked="EditToDoItem" BackgroundColor="#2563eb" TextColor="White" CornerRadius="8" HorizontalOptions="Fill"/>
@@ -31,8 +31,8 @@
                                 <Label Grid.Row="0" Grid.Column="0" Text="{Binding Name}" FontAttributes="Bold" FontSize="16" TextColor="#111827" />
                                 <Label Grid.Row="1" Grid.Column="0" Text="{Binding Notes}" FontSize="12" TextColor="#6b7280" />
                                 <HorizontalStackLayout Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                                    <Button Text="Done" BackgroundColor="#10b981" TextColor="White" CornerRadius="6" CommandParameter="{Binding ID}" Clicked="MarkDoneToDoItem" Padding="10,6" />
-                                    <Button Text="Delete" BackgroundColor="#ef4444" TextColor="White" CornerRadius="6" CommandParameter="{Binding ID}" Clicked="DeleteToDoItem" Padding="10,6" />
+                                    <Button Text="Done" BackgroundColor="#10b981" TextColor="White" CornerRadius="6" CommandParameter="{Binding ID}" Clicked="MarkDoneItem" Padding="10,6"/>
+                                    <Button Text="Delete" BackgroundColor="#ef4444" TextColor="White" CornerRadius="6" CommandParameter="{Binding ID}" Clicked="DeleteToDoItem" Padding="10,6"/>
                                 </HorizontalStackLayout>
                             </Grid>
                         </Frame>
