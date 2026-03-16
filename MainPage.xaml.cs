@@ -21,7 +21,7 @@ public partial class MainPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        var list = await db.GetItemsNotDoneAsync();
+        var list = await db.GetItemsAsync();
         items.Clear();
         foreach (var it in list)
             items.Add(it);
@@ -72,20 +72,6 @@ public partial class MainPage : ContentPage
             if (item != null)
             {
                 await db.DeleteItemAsync(item);
-                items.Remove(item);
-            }
-        }
-    }
-
-    private async void MarkDoneToDoItem(object sender, EventArgs e)
-    {
-        if (sender is Button btn && btn.CommandParameter is int id)
-        {
-            var item = items.FirstOrDefault(x => x.ID == id);
-            if (item != null)
-            {
-                item.Done = true;
-                await db.SaveItemAsync(item);
                 items.Remove(item);
             }
         }
