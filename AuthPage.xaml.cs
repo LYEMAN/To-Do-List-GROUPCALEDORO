@@ -28,8 +28,8 @@ public partial class AuthPage : ContentPage
         {
             messageLabel.TextColor = Colors.Green;
             messageLabel.Text = "Login successful.";
-            // navigate to main page
-            await Shell.Current.GoToAsync("//MainPage");
+            // navigate to todo tab page
+            await Shell.Current.GoToAsync("//Todo");
         }
         else
         {

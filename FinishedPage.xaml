@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="MauiApp2.FinishedPage"
+    Title="Finished"
+    BackgroundColor="#f7f8fa">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="14" Padding="16">
+            <Label Text="Finished Tasks" FontSize="26" FontAttributes="Bold" TextColor="#111827" />
+            <Label Text="Here are tasks you marked as done." FontSize="13" TextColor="#6b7280" />
+
+            <CollectionView x:Name="finishedLV" SelectionMode="None" BackgroundColor="Transparent">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Margin="0,4" Padding="12" CornerRadius="10" BackgroundColor="#ffffff" BorderColor="#e5e7eb" HasShadow="False">
+                            <Grid ColumnDefinitions="*,auto" RowDefinitions="auto,auto">
+                                <Label Grid.Row="0" Grid.Column="0" Text="{Binding Name}" FontAttributes="Bold" FontSize="16" TextColor="#111827" />
+                                <Label Grid.Row="1" Grid.Column="0" Text="{Binding Notes}" FontSize="12" TextColor="#6b7280" />
+                                <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Text="Undo" BackgroundColor="#2563eb" TextColor="White" CornerRadius="6" CommandParameter="{Binding ID}" Clicked="UndoDoneItem" Padding="10,6" />
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

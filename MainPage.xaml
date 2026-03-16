@@ -2,83 +2,44 @@
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    x:Class="MauiApp2.MainPage">
+    x:Class="MauiApp2.MainPage"
+    BackgroundColor="#f7f8fa">
 
-    <VerticalStackLayout Spacing="10" Padding="10">
+    <ScrollView>
+        <VerticalStackLayout Spacing="14" Padding="16">
 
-        <!-- Input Section -->
-        <VerticalStackLayout Spacing="10">
+            <Label Text="My Tasks" FontSize="26" FontAttributes="Bold" TextColor="#111827" />
+            <Label Text="Add, edit, and delete tasks with a minimal interface." FontSize="13" TextColor="#6b7280" />
 
-            <Entry x:Name="titleEntry"
-                   Placeholder="Title"
-                   ReturnType="Next"
-                   MaxLength="50"/>
+            <Frame BackgroundColor="#ffffff" BorderColor="#e5e7eb" CornerRadius="12" Padding="14" HasShadow="False">
+                <VerticalStackLayout Spacing="8">
+                    <Entry x:Name="titleEntry" Placeholder="Task title" BackgroundColor="#f9fafb" CornerRadius="8" />
+                    <Editor x:Name="detailsEditor" Placeholder="Details" HeightRequest="90" BackgroundColor="#f9fafb" CornerRadius="8"/>
+                    <HorizontalStackLayout Spacing="8">
+                        <Button x:Name="addBtn" Text="Add" Clicked="AddToDoItem" BackgroundColor="#111827" TextColor="White" CornerRadius="8" HorizontalOptions="Fill"/>
+                        <Button x:Name="editBtn" IsVisible="False" Text="Save" Clicked="EditToDoItem" BackgroundColor="#2563eb" TextColor="White" CornerRadius="8" HorizontalOptions="Fill"/>
+                        <Button x:Name="cancelBtn" IsVisible="False" Text="Cancel" Clicked="CancelEdit" BackgroundColor="#e5e7eb" TextColor="#111827" CornerRadius="8" HorizontalOptions="Fill"/>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
 
-            <Editor x:Name="detailsEditor"
-                    Placeholder="Details"
-                    MaxLength="240"
-                    HeightRequest="100"/>
-
-            <Button x:Name="addBtn"
-                    Text="Add"
-                    Clicked="AddToDoItem"/>
-
-            <Button x:Name="editBtn"
-                    IsVisible="False"
-                    Text="Edit"
-                    Clicked="EditToDoItem"/>
-
-            <Button x:Name="cancelBtn"
-                    IsVisible="False"
-                    Text="Cancel Edit"
-                    Clicked="CancelEdit"/>
+            <CollectionView x:Name="todoLV" SelectionMode="Single" SelectionChanged="TodoLV_OnItemSelected" BackgroundColor="Transparent">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Margin="0,4" Padding="12" CornerRadius="10" BackgroundColor="#ffffff" BorderColor="#e5e7eb" HasShadow="False">
+                            <Grid ColumnDefinitions="*,auto" RowDefinitions="auto,auto">
+                                <Label Grid.Row="0" Grid.Column="0" Text="{Binding Name}" FontAttributes="Bold" FontSize="16" TextColor="#111827" />
+                                <Label Grid.Row="1" Grid.Column="0" Text="{Binding Notes}" FontSize="12" TextColor="#6b7280" />
+                                <HorizontalStackLayout Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                    <Button Text="Done" BackgroundColor="#10b981" TextColor="White" CornerRadius="6" CommandParameter="{Binding ID}" Clicked="MarkDoneToDoItem" Padding="10,6" />
+                                    <Button Text="Delete" BackgroundColor="#ef4444" TextColor="White" CornerRadius="6" CommandParameter="{Binding ID}" Clicked="DeleteToDoItem" Padding="10,6" />
+                                </HorizontalStackLayout>
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
 
         </VerticalStackLayout>
-
-        <!-- List Section -->
-        <ListView x:Name="todoLV"
-                  HasUnevenRows="True"
-                  ItemSelected="TodoLV_OnItemSelected">
-
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <ViewCell>
-                        <Grid Padding="10" RowSpacing="5">
-
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="8*"/>
-                                <ColumnDefinition Width="2*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <Label Grid.Row="0"
-                                   Grid.Column="0"
-                                   FontSize="16"
-                                   TextColor="Black"
-                                   Text="{Binding Name}" />
-
-                            <Label Grid.Row="1"
-                                   Grid.Column="0"
-                                   FontSize="14"
-                                   TextColor="Black"
-                                   Text="{Binding Notes}" />
-
-                            <Button Grid.Row="0"
-                                    Grid.RowSpan="2"
-                                    Grid.Column="1"
-                                    Text="Delete"
-                                    CommandParameter="{Binding ID}"
-                                    Clicked="DeleteToDoItem"/>
-                        </Grid>
-                    </ViewCell>
-                </DataTemplate>
-            </ListView.ItemTemplate>
-
-        </ListView>
-
-    </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

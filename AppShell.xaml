@@ -12,9 +12,19 @@
         ContentTemplate="{DataTemplate local:AuthPage}"
         Route="AuthPage" />
 
-    <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+    <TabBar>
+        <Tab Title="To Do" Icon="dotnet_bot.png">
+            <ShellContent
+                Title="To Do"
+                ContentTemplate="{DataTemplate local:MainPage}"
+                Route="Todo" />
+        </Tab>
+        <Tab Title="Finished" Icon="dotnet_bot.png">
+            <ShellContent
+                Title="Finished"
+                ContentTemplate="{DataTemplate local:FinishedPage}"
+                Route="Finished" />
+        </Tab>
+    </TabBar>
 
 </Shell>
