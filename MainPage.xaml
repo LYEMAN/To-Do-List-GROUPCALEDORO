@@ -24,8 +24,8 @@
                     <Label Text="Add a new task" FontSize="14" TextColor="#6b7280" FontAttributes="Bold" />
                     <Frame BackgroundColor="#ffffff" BorderColor="#e5e7eb" CornerRadius="12" Padding="14" HasShadow="False">
                         <VerticalStackLayout Spacing="10">
-                            <Entry x:Name="titleEntry" Placeholder="Task title" BackgroundColor="#f9fafb" FontSize="14"/>
-                            <Editor x:Name="detailsEditor" Placeholder="Details (optional)" HeightRequest="90" BackgroundColor="#f9fafb" FontSize="13"/>
+                            <Entry x:Name="titleEntry" Placeholder="Task title" BackgroundColor="#f9fafb" Padding="12,10" FontSize="14"/>
+                            <Editor x:Name="detailsEditor" Placeholder="Details (optional)" HeightRequest="90" BackgroundColor="#f9fafb" Padding="12,10" FontSize="13"/>
                             <HorizontalStackLayout Spacing="8">
                                 <Button x:Name="addBtn" Text="Add Task" Clicked="AddToDoItem" BackgroundColor="#111827" TextColor="White" CornerRadius="8" HorizontalOptions="Fill" FontAttributes="Bold"/>
                                 <Button x:Name="editBtn" IsVisible="False" Text="Save Changes" Clicked="EditToDoItem" BackgroundColor="#2563eb" TextColor="White" CornerRadius="8" HorizontalOptions="Fill" FontAttributes="Bold"/>
