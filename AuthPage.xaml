@@ -15,8 +15,8 @@
             <Frame x:Name="loginFrame" Padding="14" CornerRadius="12" BackgroundColor="#FFFFFF" BorderColor="#e5e7eb" HasShadow="False">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Sign In" FontSize="16" FontAttributes="Bold" TextColor="#111827" />
-                    <Entry x:Name="loginEmailEntry" Placeholder="Email" Keyboard="Email" BackgroundColor="#f9fafb" Padding="12,10"/>
-                    <Entry x:Name="loginPasswordEntry" Placeholder="Password" IsPassword="True" BackgroundColor="#f9fafb" Padding="12,10"/>
+                    <Entry x:Name="loginEmailEntry" Placeholder="Email" Keyboard="Email" BackgroundColor="#f9fafb" Margin="12,10"/>
+                    <Entry x:Name="loginPasswordEntry" Placeholder="Password" IsPassword="True" BackgroundColor="#f9fafb" Margin="12,10"/>
                     <Label x:Name="messageLabel" TextColor="Red" HorizontalOptions="Center" FontSize="12"/>
                     <Button Text="Sign In" Clicked="OnLoginClicked" BackgroundColor="#1f2937" TextColor="White" CornerRadius="8" FontAttributes="Bold"/>
                     <Button Text="Need an account? Sign Up" Clicked="ShowSignUpForm" BackgroundColor="#e5e7eb" TextColor="#111827" CornerRadius="8" FontAttributes="Bold"/>
@@ -27,11 +27,11 @@
             <Frame x:Name="signupFrame" IsVisible="False" Padding="14" CornerRadius="12" BackgroundColor="#FFFFFF" BorderColor="#e5e7eb" HasShadow="False">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Create Account" FontSize="16" FontAttributes="Bold" TextColor="#111827" />
-                    <Entry x:Name="signupFirstNameEntry" Placeholder="First Name" BackgroundColor="#f9fafb" Padding="12,10"/>
-                    <Entry x:Name="signupLastNameEntry" Placeholder="Last Name" BackgroundColor="#f9fafb" Padding="12,10"/>
-                    <Entry x:Name="signupEmailEntry" Placeholder="Email" Keyboard="Email" BackgroundColor="#f9fafb" Padding="12,10"/>
-                    <Entry x:Name="signupPasswordEntry" Placeholder="Password" IsPassword="True" BackgroundColor="#f9fafb" Padding="12,10"/>
-                    <Entry x:Name="confirmPasswordEntry" Placeholder="Confirm Password" IsPassword="True" BackgroundColor="#f9fafb" Padding="12,10"/>
+                    <Entry x:Name="signupFirstNameEntry" Placeholder="First Name" BackgroundColor="#f9fafb" Margin="12,10"/>
+                    <Entry x:Name="signupLastNameEntry" Placeholder="Last Name" BackgroundColor="#f9fafb" Margin="12,10"/>
+                    <Entry x:Name="signupEmailEntry" Placeholder="Email" Keyboard="Email" BackgroundColor="#f9fafb" Margin="12,10"/>
+                    <Entry x:Name="signupPasswordEntry" Placeholder="Password" IsPassword="True" BackgroundColor="#f9fafb" Margin="12,10"/>
+                    <Entry x:Name="confirmPasswordEntry" Placeholder="Confirm Password" IsPassword="True" BackgroundColor="#f9fafb" Margin="12,10"/>
                     <Label x:Name="signupMessageLabel" TextColor="Red" HorizontalOptions="Center" FontSize="12"/>
                     <Button Text="Create Account" Clicked="OnSignUpClicked" BackgroundColor="#10b981" TextColor="White" CornerRadius="8" FontAttributes="Bold"/>
                     <Button Text="Back to Sign In" Clicked="ShowLoginForm" BackgroundColor="#e5e7eb" TextColor="#111827" CornerRadius="8" FontAttributes="Bold"/>

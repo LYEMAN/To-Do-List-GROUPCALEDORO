@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
+using Microsoft.Maui.Storage;
 
 namespace MauiApp2
 {
@@ -24,10 +26,10 @@ namespace MauiApp2
         {
             try
             {
-                await SecureStorage.SetAsync(UserIdKey, userId.ToString());
-                await SecureStorage.SetAsync(FirstNameKey, firstName);
-                await SecureStorage.SetAsync(LastNameKey, lastName);
-                await SecureStorage.SetAsync(EmailKey, email);
+                await SafeSetAsync(UserIdKey, userId.ToString());
+                await SafeSetAsync(FirstNameKey, firstName);
+                await SafeSetAsync(LastNameKey, lastName);
+                await SafeSetAsync(EmailKey, email);
             }
             catch (Exception ex)
             {
@@ -43,7 +45,7 @@ namespace MauiApp2
         {
             try
             {
-                var value = await SecureStorage.GetAsync(UserIdKey);
+                var value = await SafeGetAsync(UserIdKey);
                 if (int.TryParse(value, out var userId))
                     return userId;
             }
@@ -61,7 +63,7 @@ namespace MauiApp2
         {
             try
             {
-                return await SecureStorage.GetAsync(FirstNameKey);
+                return await SafeGetAsync(FirstNameKey);
             }
             catch (Exception ex)
             {
@@ -77,7 +79,7 @@ namespace MauiApp2
         {
             try
             {
-                return await SecureStorage.GetAsync(LastNameKey);
+                return await SafeGetAsync(LastNameKey);
             }
             catch (Exception ex)
             {
@@ -93,7 +95,7 @@ namespace MauiApp2
         {
             try
             {
-                return await SecureStorage.GetAsync(EmailKey);
+                return await SafeGetAsync(EmailKey);
             }
             catch (Exception ex)
             {
@@ -128,14 +130,83 @@ namespace MauiApp2
         {
             try
             {
-                SecureStorage.Remove(UserIdKey);
-                SecureStorage.Remove(FirstNameKey);
-                SecureStorage.Remove(LastNameKey);
-                SecureStorage.Remove(EmailKey);
+                SafeRemove(UserIdKey);
+                SafeRemove(FirstNameKey);
+                SafeRemove(LastNameKey);
+                SafeRemove(EmailKey);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error clearing session: {ex.Message}");
+            }
+        }
+
+        // Safe helpers: attempt SecureStorage first, fall back to Preferences for platforms
+        // where SecureStorage is not available (e.g., un-packaged Windows desktop during development).
+        private static async Task SafeSetAsync(string key, string value)
+        {
+            try
+            {
+                await SecureStorage.SetAsync(key, value ?? string.Empty);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"SecureStorage.SetAsync failed for '{key}', falling back to Preferences: {ex.Message}");
+                try
+                {
+                    Preferences.Set(key, value ?? string.Empty);
+                }
+                catch (Exception prefEx)
+                {
+                    Debug.WriteLine($"Preferences.Set failed for '{key}': {prefEx.Message}");
+                }
+            }
+        }
+
+        private static async Task<string?> SafeGetAsync(string key)
+        {
+            try
+            {
+                var val = await SecureStorage.GetAsync(key);
+                if (!string.IsNullOrEmpty(val))
+                    return val;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"SecureStorage.GetAsync failed for '{key}', falling back to Preferences: {ex.Message}");
+            }
+
+            try
+            {
+                if (Preferences.ContainsKey(key))
+                    return Preferences.Get(key, null);
+            }
+            catch (Exception prefEx)
+            {
+                Debug.WriteLine($"Preferences.Get failed for '{key}': {prefEx.Message}");
+            }
+
+            return null;
+        }
+
+        private static void SafeRemove(string key)
+        {
+            try
+            {
+                SecureStorage.Remove(key);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"SecureStorage.Remove failed for '{key}', attempting Preferences.Remove: {ex.Message}");
+                try
+                {
+                    if (Preferences.ContainsKey(key))
+                        Preferences.Remove(key);
+                }
+                catch (Exception prefEx)
+                {
+                    Debug.WriteLine($"Preferences.Remove failed for '{key}': {prefEx.Message}");
+                }
             }
         }
     }
