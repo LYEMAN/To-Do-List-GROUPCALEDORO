@@ -61,12 +61,40 @@ namespace MauiApp2
 
                 if (response.IsSuccessStatusCode)
                 {
+                    // Log raw response for diagnostics
+                    System.Diagnostics.Debug.WriteLine($"[ApiService] SignUp response: {responseContent}");
+
+                    // Try to deserialize into expected shape, but be resilient to different JSON structures
                     var result = JsonSerializer.Deserialize<UserSignUpResponse>(responseContent, _jsonOptions);
+                    if (result == null || result.Id <= 0)
+                    {
+                        // Try to extract from wrappers like { "data": { ... } } or arrays
+                        try
+                        {
+                            using var doc = JsonDocument.Parse(responseContent);
+                            var root = doc.RootElement;
+
+                            JsonElement candidate = root;
+                            if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("data", out var dataProp))
+                                candidate = dataProp;
+
+                            if (candidate.ValueKind == JsonValueKind.Object && candidate.TryGetProperty("id", out var idProp) && idProp.TryGetInt32(out var parsedId))
+                            {
+                                result ??= new UserSignUpResponse();
+                                result.Id = parsedId;
+                                if (candidate.TryGetProperty("first_name", out var fn)) result.FirstName = fn.GetString();
+                                if (candidate.TryGetProperty("last_name", out var ln)) result.LastName = ln.GetString();
+                                if (candidate.TryGetProperty("email", out var em)) result.Email = em.GetString();
+                            }
+                        }
+                        catch { /* ignore parse errors */ }
+                    }
+
                     return new ApiResponse<UserSignUpResponse>
                     {
-                        Success = true,
+                        Success = result != null && result.Id > 0,
                         Data = result,
-                        Message = "Account created successfully"
+                        Message = result != null && result.Id > 0 ? "Account created successfully" : ExtractErrorMessage(responseContent) ?? "Sign up succeeded but server returned unexpected data"
                     };
                 }
                 else
@@ -103,14 +131,46 @@ namespace MauiApp2
                 var response = await _httpClient.GetAsync(url);
                 var responseContent = await response.Content.ReadAsStringAsync();
 
+                // Log raw response for debugging
+                System.Diagnostics.Debug.WriteLine($"[ApiService] SignIn response: {responseContent}");
+
                 if (response.IsSuccessStatusCode)
                 {
+                    // Try to deserialize normally
                     var result = JsonSerializer.Deserialize<UserSignInResponse>(responseContent, _jsonOptions);
+
+                    // If deserialization didn't yield an id, try common wrapper shapes
+                    if ((result == null) || result.Id <= 0)
+                    {
+                        try
+                        {
+                            using var doc = JsonDocument.Parse(responseContent);
+                            var root = doc.RootElement;
+
+                            JsonElement candidate = root;
+                            if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("data", out var dataProp))
+                                candidate = dataProp;
+
+                            if (candidate.ValueKind == JsonValueKind.Array && candidate.GetArrayLength() > 0)
+                                candidate = candidate[0];
+
+                            if (candidate.ValueKind == JsonValueKind.Object && candidate.TryGetProperty("id", out var idProp) && idProp.TryGetInt32(out var parsedId))
+                            {
+                                result ??= new UserSignInResponse();
+                                result.Id = parsedId;
+                                if (candidate.TryGetProperty("first_name", out var fn)) result.FirstName = fn.GetString();
+                                if (candidate.TryGetProperty("last_name", out var ln)) result.LastName = ln.GetString();
+                                if (candidate.TryGetProperty("email", out var em)) result.Email = em.GetString();
+                            }
+                        }
+                        catch { /* ignore parse errors */ }
+                    }
+
                     return new ApiResponse<UserSignInResponse>
                     {
-                        Success = true,
+                        Success = result != null && result.Id > 0,
                         Data = result,
-                        Message = "Sign in successful"
+                        Message = result != null && result.Id > 0 ? "Sign in successful" : "Account does not exist"
                     };
                 }
                 else
@@ -151,11 +211,48 @@ namespace MauiApp2
                 var response = await _httpClient.GetAsync(url);
                 var responseContent = await response.Content.ReadAsStringAsync();
 
+                // Log raw response for diagnostics
+                System.Diagnostics.Debug.WriteLine($"[ApiService] GetTasks response: {responseContent}");
+
                 if (response.IsSuccessStatusCode)
                 {
-                    // API might return array or object with data property
-                    var result = JsonSerializer.Deserialize<List<TaskItem>>(responseContent, _jsonOptions)
-                        ?? JsonSerializer.Deserialize<dynamic>(responseContent, _jsonOptions) as List<TaskItem>;
+                    List<TaskItem>? result = null;
+                    try
+                    {
+                        result = JsonSerializer.Deserialize<List<TaskItem>>(responseContent, _jsonOptions);
+                    }
+                    catch { result = null; }
+
+                    if (result == null || result.Count == 0)
+                    {
+                        // Try to extract wrapped data: { "data": [...] } or similar
+                        try
+                        {
+                            using var doc = JsonDocument.Parse(responseContent);
+                            var root = doc.RootElement;
+
+                            JsonElement candidate = root;
+                            if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("data", out var dataProp))
+                                candidate = dataProp;
+
+                            if (candidate.ValueKind == JsonValueKind.Array)
+                            {
+                                result = new List<TaskItem>();
+                                foreach (var el in candidate.EnumerateArray())
+                                {
+                                    try
+                                    {
+                                        var itemJson = el.GetRawText();
+                                        var item = JsonSerializer.Deserialize<TaskItem>(itemJson, _jsonOptions);
+                                        if (item != null)
+                                            result.Add(item);
+                                    }
+                                    catch { /* ignore individual parse errors */ }
+                                }
+                            }
+                        }
+                        catch { /* ignore parse errors */ }
+                    }
 
                     return new ApiResponse<List<TaskItem>>
                     {
@@ -206,14 +303,48 @@ namespace MauiApp2
                 var response = await _httpClient.PostAsync($"{_baseUrl}/addItem_action.php", content);
                 var responseContent = await response.Content.ReadAsStringAsync();
 
+                // Log raw response for diagnostics
+                System.Diagnostics.Debug.WriteLine($"[ApiService] AddTask response: {responseContent}");
+
                 if (response.IsSuccessStatusCode)
                 {
+                    // Try to deserialize directly
                     var result = JsonSerializer.Deserialize<TaskItem>(responseContent, _jsonOptions);
+
+                    // If result is null or missing id, attempt to find a wrapped object
+                    if (result == null || result.Id <= 0)
+                    {
+                        try
+                        {
+                            using var doc = JsonDocument.Parse(responseContent);
+                            var root = doc.RootElement;
+
+                            JsonElement candidate = root;
+                            if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("data", out var dataProp))
+                                candidate = dataProp;
+
+                            if (candidate.ValueKind == JsonValueKind.Array && candidate.GetArrayLength() > 0)
+                                candidate = candidate[0];
+
+                            if (candidate.ValueKind == JsonValueKind.Object)
+                            {
+                                // Map fields if present
+                                result ??= new TaskItem();
+                                if (candidate.TryGetProperty("id", out var idProp) && idProp.TryGetInt32(out var parsedId)) result.Id = parsedId;
+                                if (candidate.TryGetProperty("item_name", out var nameProp)) result.ItemName = nameProp.GetString();
+                                if (candidate.TryGetProperty("item_description", out var descProp)) result.ItemDescription = descProp.GetString();
+                                if (candidate.TryGetProperty("status", out var statusProp)) result.Status = statusProp;
+                                if (candidate.TryGetProperty("user_id", out var uidProp) && uidProp.TryGetInt32(out var parsedUid)) result.UserId = parsedUid;
+                            }
+                        }
+                        catch { /* ignore parse errors */ }
+                    }
+
                     return new ApiResponse<TaskItem>
                     {
-                        Success = true,
+                        Success = result != null && result.Id > 0,
                         Data = result,
-                        Message = "Task added successfully"
+                        Message = result != null && result.Id > 0 ? "Task added successfully" : ExtractErrorMessage(responseContent) ?? "Task added but server returned unexpected data"
                     };
                 }
                 else
@@ -456,7 +587,9 @@ namespace MauiApp2
         public int Id { get; set; }
         public string? ItemName { get; set; }
         public string? ItemDescription { get; set; }
-        public string? Status { get; set; } // 'active' or 'inactive'
+        // Status can be returned by the API as a string, number or boolean depending on server implementation.
+        // Use JsonElement to accept any JSON token and interpret it when mapping to UI models.
+        public System.Text.Json.JsonElement Status { get; set; }
         public int UserId { get; set; }
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

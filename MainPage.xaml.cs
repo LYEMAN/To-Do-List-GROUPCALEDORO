@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Collections.Generic;
+using Microsoft.Maui.ApplicationModel;
 
 public partial class MainPage : ContentPage
 {
@@ -24,6 +25,29 @@ public partial class MainPage : ContentPage
         todoLV.ItemsSource = items;
     }
 
+    private static bool ConvertStatusToDone(System.Text.Json.JsonElement statusElement)
+    {
+        try
+        {
+            if (statusElement.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                var s = statusElement.GetString();
+                return string.Equals(s, "inactive", StringComparison.OrdinalIgnoreCase) || string.Equals(s, "false", StringComparison.OrdinalIgnoreCase);
+            }
+            if (statusElement.ValueKind == System.Text.Json.JsonValueKind.Number)
+            {
+                if (statusElement.TryGetInt32(out var n))
+                    return n != 1; // assume 1 == active, 0 == inactive
+            }
+            if (statusElement.ValueKind == System.Text.Json.JsonValueKind.True)
+                return false; // true => active
+            if (statusElement.ValueKind == System.Text.Json.JsonValueKind.False)
+                return true; // false => inactive
+        }
+        catch { }
+        return false;
+    }
+
     /// <summary>
     /// Load tasks when page appears
     /// </summary>
@@ -33,9 +57,11 @@ public partial class MainPage : ContentPage
 
         // Check if user is logged in
         var userId = await SessionStorage.GetUserIdAsync();
+        System.Diagnostics.Debug.WriteLine($"[MainPage] OnAppearing retrieved user id = {userId}");
         if (!userId.HasValue || userId <= 0)
         {
             // User not logged in, go back to auth
+            System.Diagnostics.Debug.WriteLine("[MainPage] No valid session, navigating to AuthPage");
             await Shell.Current.GoToAsync("//AuthPage");
             return;
         }
@@ -62,24 +88,55 @@ public partial class MainPage : ContentPage
         {
             var response = await _apiService.GetTasksAsync(_userId, status);
 
-            items.Clear();
+            System.Diagnostics.Debug.WriteLine($"[MainPage] GetTasks response: Success={response.Success} Message='{response.Message}' DataCount={(response.Data?.Count ?? 0)}");
 
-            if (response.Success && response.Data != null)
+            // If the request failed (network error / server unreachable), inform the user and do not clear existing items
+            if (!response.Success)
+            {
+                // Show a non-blocking alert so the user knows why the list is empty
+                await DisplayAlert("Network error", response.Message ?? "Failed to retrieve tasks", "OK");
+                System.Diagnostics.Debug.WriteLine("[MainPage] GetTasks failed - keeping existing items");
+                return;
+            }
+
+            var newItems = new List<ToDoItem>();
+            if (response.Data != null)
             {
                 foreach (var apiTask in response.Data)
                 {
-                    // Convert API TaskItem to ToDoItem
+                    // Log API task for diagnostics
+                    try
+                    {
+                        var statusText = apiTask.Status.ValueKind != System.Text.Json.JsonValueKind.Undefined ? apiTask.Status.GetRawText() : "<null>";
+                        System.Diagnostics.Debug.WriteLine($"[MainPage] API Task id={apiTask.Id} name='{apiTask.ItemName}' desc='{apiTask.ItemDescription}' status={statusText}");
+                    }
+                    catch { }
+
                     var toDoItem = new ToDoItem
                     {
                         ID = apiTask.Id,
                         Name = apiTask.ItemName,
                         Notes = apiTask.ItemDescription,
-                        Done = apiTask.Status == "inactive"
+                        Done = ConvertStatusToDone(apiTask.Status)
                     };
-                    items.Add(toDoItem);
+                    newItems.Add(toDoItem);
                 }
-                emptyLabel.IsVisible = items.Count == 0;
             }
+
+            // Update UI on main thread
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                items.Clear();
+                foreach (var it in newItems)
+                    items.Add(it);
+
+                // Defensive: ensure ItemsSource is set
+                if (todoLV.ItemsSource == null)
+                    todoLV.ItemsSource = items;
+
+                emptyLabel.IsVisible = items.Count == 0;
+                System.Diagnostics.Debug.WriteLine($"[MainPage] UI items count = {items.Count}");
+            });
         }
         catch (Exception ex)
         {
@@ -105,18 +162,17 @@ public partial class MainPage : ContentPage
 
             if (response.Success && response.Data != null)
             {
-                // Add to local list
-                var item = new ToDoItem
-                {
-                    ID = response.Data.Id,
-                    Name = response.Data.ItemName,
-                    Notes = response.Data.ItemDescription,
-                    Done = false
-                };
-
-                items.Add(item);
+                // Refresh tasks from server to ensure list matches backend state
                 ClearInputs();
-
+                await LoadTasksAsync("active");
+                await DisplayAlert("Success", "Task added successfully", "OK");
+            }
+            else if (!string.IsNullOrEmpty(response.Message) && response.Message.IndexOf("add", StringComparison.OrdinalIgnoreCase) >= 0 && response.Message.IndexOf("success", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                // Server indicates success via message but did not return a usable data object.
+                // Treat as success and refresh the list.
+                ClearInputs();
+                await LoadTasksAsync("active");
                 await DisplayAlert("Success", "Task added successfully", "OK");
             }
             else

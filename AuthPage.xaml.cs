@@ -58,6 +58,16 @@ public partial class AuthPage : ContentPage
                 messageLabel.Text = "Login successful.";
 
                 // Save user session for later use
+                System.Diagnostics.Debug.WriteLine($"[AuthPage] SignIn response id={response.Data.Id}, email={response.Data.Email}");
+
+                if (response.Data.Id <= 0)
+                {
+                    // Invalid user id returned by API — treat as failure
+                    messageLabel.TextColor = Colors.Red;
+                    messageLabel.Text = "Login failed: invalid user id returned by server.";
+                    return;
+                }
+
                 await SessionStorage.SaveUserSessionAsync(
                     response.Data.Id,
                     response.Data.FirstName ?? "",
@@ -65,8 +75,14 @@ public partial class AuthPage : ContentPage
                     response.Data.Email ?? ""
                 );
 
+                // Debug: verify session saved
+                var storedId = await SessionStorage.GetUserIdAsync();
+                System.Diagnostics.Debug.WriteLine($"[AuthPage] Saved user id = {storedId}");
+
                 // Navigate to main page
+                System.Diagnostics.Debug.WriteLine("[AuthPage] Navigating to MainPage");
                 await Shell.Current.GoToAsync("//MainPage");
+                System.Diagnostics.Debug.WriteLine("[AuthPage] Navigation to MainPage completed");
             }
             else
             {
@@ -124,6 +140,14 @@ public partial class AuthPage : ContentPage
 
                 if (loginResponse.Success && loginResponse.Data != null)
                 {
+                    System.Diagnostics.Debug.WriteLine($"[AuthPage] Auto sign-in response id={loginResponse.Data.Id}, email={loginResponse.Data.Email}");
+
+                    if (loginResponse.Data.Id <= 0)
+                    {
+                        signupMessageLabel.TextColor = Colors.Red;
+                        signupMessageLabel.Text = "Sign up succeeded but invalid user id returned.";
+                        return;
+                    }
                     await SessionStorage.SaveUserSessionAsync(
                         loginResponse.Data.Id,
                         loginResponse.Data.FirstName ?? "",

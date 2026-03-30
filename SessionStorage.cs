@@ -148,6 +148,7 @@ namespace MauiApp2
             try
             {
                 await SecureStorage.SetAsync(key, value ?? string.Empty);
+                Debug.WriteLine($"SecureStorage.SetAsync succeeded for '{key}' with value='{value}'");
             }
             catch (Exception ex)
             {
@@ -155,6 +156,7 @@ namespace MauiApp2
                 try
                 {
                     Preferences.Set(key, value ?? string.Empty);
+                    Debug.WriteLine($"Preferences.Set succeeded for '{key}' with value='{value}'");
                 }
                 catch (Exception prefEx)
                 {
@@ -169,7 +171,10 @@ namespace MauiApp2
             {
                 var val = await SecureStorage.GetAsync(key);
                 if (!string.IsNullOrEmpty(val))
+                {
+                    Debug.WriteLine($"SecureStorage.GetAsync returned for '{key}' = '{val}'");
                     return val;
+                }
             }
             catch (Exception ex)
             {
@@ -179,7 +184,12 @@ namespace MauiApp2
             try
             {
                 if (Preferences.ContainsKey(key))
-                    return Preferences.Get(key, null);
+                {
+                    var prefVal = Preferences.Get(key, (string?)null);
+                    Debug.WriteLine($"Preferences.Get returned for '{key}' = '{prefVal}'");
+                    return prefVal;
+                }
+
             }
             catch (Exception prefEx)
             {
