@@ -24,7 +24,7 @@ public partial class FinishedPage : ContentPage
         var userId = await SessionStorage.GetUserIdAsync();
         if (!userId.HasValue || userId <= 0)
         {
-            await Shell.Current.GoToAsync("AuthPage");
+            await Shell.Current.GoToAsync("//AuthPage");
             return;
         }
 

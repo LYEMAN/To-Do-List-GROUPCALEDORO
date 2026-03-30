@@ -13,13 +13,33 @@ public partial class AuthPage : ContentPage
     }
 
     /// <summary>
+    /// Show sign up form
+    /// </summary>
+    private void ShowSignUpForm(object sender, EventArgs e)
+    {
+        loginFrame.IsVisible = false;
+        signupFrame.IsVisible = true;
+        ClearSignupFields();
+    }
+
+    /// <summary>
+    /// Show login form
+    /// </summary>
+    private void ShowLoginForm(object sender, EventArgs e)
+    {
+        loginFrame.IsVisible = true;
+        signupFrame.IsVisible = false;
+        ClearLoginFields();
+    }
+
+    /// <summary>
     /// Handle sign in with email and password via REST API
     /// </summary>
     private async void OnLoginClicked(object sender, EventArgs e)
     {
         messageLabel.Text = string.Empty;
-        var email = usernameEntry.Text?.Trim() ?? string.Empty;
-        var password = passwordEntry.Text ?? string.Empty;
+        var email = loginEmailEntry.Text?.Trim() ?? string.Empty;
+        var password = loginPasswordEntry.Text ?? string.Empty;
 
         if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
         {
@@ -46,7 +66,7 @@ public partial class AuthPage : ContentPage
                 );
 
                 // Navigate to main page
-                await Shell.Current.GoToAsync("MainPage");
+                await Shell.Current.GoToAsync("//MainPage");
             }
             else
             {
@@ -66,25 +86,25 @@ public partial class AuthPage : ContentPage
     /// </summary>
     private async void OnSignUpClicked(object sender, EventArgs e)
     {
-        messageLabel.Text = string.Empty;
+        signupMessageLabel.Text = string.Empty;
 
         // Get form values
-        var firstName = usernameEntry.Text?.Trim() ?? string.Empty;
-        var lastName = passwordEntry.Text?.Trim() ?? string.Empty;
-        var email = usernameEntry.Text?.Trim() ?? string.Empty;
-        var password = passwordEntry.Text ?? string.Empty;
-        var confirmPassword = passwordEntry.Text ?? string.Empty;
+        var firstName = signupFirstNameEntry.Text?.Trim() ?? string.Empty;
+        var lastName = signupLastNameEntry.Text?.Trim() ?? string.Empty;
+        var email = signupEmailEntry.Text?.Trim() ?? string.Empty;
+        var password = signupPasswordEntry.Text ?? string.Empty;
+        var confirmPassword = confirmPasswordEntry.Text ?? string.Empty;
 
         if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(lastName) ||
             string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
         {
-            messageLabel.Text = "Please fill in all fields.";
+            signupMessageLabel.Text = "Please fill in all fields.";
             return;
         }
 
         if (password != confirmPassword)
         {
-            messageLabel.Text = "Passwords do not match.";
+            signupMessageLabel.Text = "Passwords do not match.";
             return;
         }
 
@@ -95,19 +115,58 @@ public partial class AuthPage : ContentPage
 
             if (response.Success)
             {
-                messageLabel.TextColor = Colors.Green;
-                messageLabel.Text = "Account created successfully. You can now sign in.";
+                signupMessageLabel.TextColor = Colors.Green;
+                signupMessageLabel.Text = "Account created successfully. Signing you in...";
+
+                // Auto-login after signup
+                await Task.Delay(1500);
+                var loginResponse = await _apiService.SignInAsync(email, password);
+
+                if (loginResponse.Success && loginResponse.Data != null)
+                {
+                    await SessionStorage.SaveUserSessionAsync(
+                        loginResponse.Data.Id,
+                        loginResponse.Data.FirstName ?? "",
+                        loginResponse.Data.LastName ?? "",
+                        loginResponse.Data.Email ?? ""
+                    );
+
+                    await Shell.Current.GoToAsync("//MainPage");
+                }
             }
             else
             {
-                messageLabel.TextColor = Colors.Red;
-                messageLabel.Text = response.Message ?? "Sign up failed.";
+                signupMessageLabel.TextColor = Colors.Red;
+                signupMessageLabel.Text = response.Message ?? "Sign up failed.";
             }
         }
         catch (Exception ex)
         {
-            messageLabel.TextColor = Colors.Red;
-            messageLabel.Text = $"Error: {ex.Message}";
+            signupMessageLabel.TextColor = Colors.Red;
+            signupMessageLabel.Text = $"Error: {ex.Message}";
         }
+    }
+
+    /// <summary>
+    /// Clear login form fields
+    /// </summary>
+    private void ClearLoginFields()
+    {
+        loginEmailEntry.Text = string.Empty;
+        loginPasswordEntry.Text = string.Empty;
+        messageLabel.Text = string.Empty;
+    }
+
+    /// <summary>
+    /// Clear signup form fields
+    /// </summary>
+    private void ClearSignupFields()
+    {
+        signupFirstNameEntry.Text = string.Empty;
+        signupLastNameEntry.Text = string.Empty;
+        signupEmailEntry.Text = string.Empty;
+        signupPasswordEntry.Text = string.Empty;
+        confirmPasswordEntry.Text = string.Empty;
+        signupMessageLabel.Text = string.Empty;
     }
 }

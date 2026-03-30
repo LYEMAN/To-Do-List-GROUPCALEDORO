@@ -36,7 +36,7 @@ public partial class MainPage : ContentPage
         if (!userId.HasValue || userId <= 0)
         {
             // User not logged in, go back to auth
-            await Shell.Current.GoToAsync("AuthPage");
+            await Shell.Current.GoToAsync("//AuthPage");
             return;
         }
 
@@ -291,7 +291,7 @@ public partial class MainPage : ContentPage
         if (confirmed)
         {
             await SessionStorage.ClearSessionAsync();
-            await Shell.Current.GoToAsync("AuthPage");
+            await Shell.Current.GoToAsync("//AuthPage");
         }
     }
 }
