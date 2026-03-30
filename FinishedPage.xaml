@@ -6,24 +6,33 @@
     Title="Finished"
     BackgroundColor="#f7f8fa">
 
-    <ScrollView>
-        <VerticalStackLayout Spacing="12" Padding="14">
-            <Label Text="Finished Tasks" FontSize="24" FontAttributes="Bold" TextColor="#111827" />
-            <Label Text="Tasks you have marked done." FontSize="13" TextColor="#6b7280" />
+    <VerticalStackLayout Spacing="0">
+        <!-- Header Section -->
+        <Frame BackgroundColor="#10b981" BorderColor="#10b981" CornerRadius="0" Padding="20" HasShadow="False" Margin="0">
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Completed Tasks" FontSize="24" FontAttributes="Bold" TextColor="#ffffff" />
+                <Label Text="Tasks you have marked done" FontSize="13" TextColor="#d1f3df" />
+            </VerticalStackLayout>
+        </Frame>
 
-            <CollectionView x:Name="finishedLV" SelectionMode="None" BackgroundColor="Transparent">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Frame Margin="0,4" Padding="12" CornerRadius="10" BackgroundColor="#ffffff" BorderColor="#e5e7eb" HasShadow="False">
-                            <Grid RowDefinitions="auto,auto" ColumnDefinitions="*,auto">
-                                <Label Grid.Row="0" Grid.Column="0" Text="{Binding Name}" FontAttributes="Bold" FontSize="16" TextColor="#111827" />
-                                <Label Grid.Row="1" Grid.Column="0" Text="{Binding Notes}" FontSize="12" TextColor="#6b7280" />
-                                <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Text="Delete" BackgroundColor="#ef4444" TextColor="White" CornerRadius="6" CommandParameter="{Binding ID}" Clicked="DeleteToDoItem" Padding="10,6" VerticalOptions="Center"/>
-                            </Grid>
-                        </Frame>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-        </VerticalStackLayout>
-    </ScrollView>
+        <!-- Content Section -->
+        <ScrollView>
+            <VerticalStackLayout Spacing="14" Padding="16">
+                <CollectionView x:Name="finishedLV" SelectionMode="None" BackgroundColor="Transparent">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Frame Margin="0,6" Padding="14" CornerRadius="12" BackgroundColor="#ffffff" BorderColor="#e5e7eb" HasShadow="False">
+                                <Grid RowDefinitions="auto,auto" ColumnDefinitions="*,auto" ColumnSpacing="10" RowSpacing="4">
+                                    <Label Grid.Row="0" Grid.Column="0" Text="{Binding Name}" FontAttributes="Bold" FontSize="15" TextColor="#111827" LineBreakMode="WordWrap" />
+                                    <Label Grid.Row="1" Grid.Column="0" Text="{Binding Notes}" FontSize="13" TextColor="#6b7280" LineBreakMode="WordWrap" />
+                                    <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Text="×" BackgroundColor="#ef4444" TextColor="White" CornerRadius="8" CommandParameter="{Binding ID}" Clicked="DeleteToDoItem" Padding="12,8" FontAttributes="Bold" VerticalOptions="Center" FontSize="18"/>
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+                <Label x:Name="emptyLabel" Text="No completed tasks yet." FontSize="13" TextColor="#9ca3af" HorizontalOptions="Center" Margin="0,16" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </VerticalStackLayout>
 </ContentPage>

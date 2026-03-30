@@ -5,39 +5,55 @@
     x:Class="MauiApp2.MainPage"
     BackgroundColor="#f7f8fa">
 
-    <ScrollView>
-        <VerticalStackLayout Spacing="14" Padding="16">
-
-            <Label Text="My Tasks" FontSize="26" FontAttributes="Bold" TextColor="#111827" />
-            <Label Text="Add, edit, and delete tasks with a minimal interface." FontSize="13" TextColor="#6b7280" />
-
-            <Frame BackgroundColor="#ffffff" BorderColor="#e5e7eb" CornerRadius="12" Padding="14" HasShadow="False">
-                <VerticalStackLayout Spacing="8">
-                    <Entry x:Name="titleEntry" Placeholder="Task title" BackgroundColor="#f9fafb" />
-                    <Editor x:Name="detailsEditor" Placeholder="Details" HeightRequest="90" BackgroundColor="#f9fafb"/>
-                    <HorizontalStackLayout Spacing="8">
-                        <Button x:Name="addBtn" Text="Add" Clicked="AddToDoItem" BackgroundColor="#111827" TextColor="White" HorizontalOptions="Fill"/>
-                        <Button x:Name="editBtn" IsVisible="False" Text="Save" Clicked="EditToDoItem" BackgroundColor="#2563eb" TextColor="White" HorizontalOptions="Fill"/>
-                        <Button x:Name="cancelBtn" IsVisible="False" Text="Cancel" Clicked="CancelEdit" BackgroundColor="#e5e7eb" TextColor="#111827" HorizontalOptions="Fill"/>
-                    </HorizontalStackLayout>
+    <VerticalStackLayout Spacing="0">
+        <!-- Header Section -->
+        <Frame BackgroundColor="#1f2937" BorderColor="#1f2937" CornerRadius="0" Padding="20" HasShadow="False" Margin="0">
+            <Grid ColumnDefinitions="*,auto" RowDefinitions="auto,auto">
+                <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
+                    <Label Text="My Tasks" FontSize="24" FontAttributes="Bold" TextColor="#ffffff" />
+                    <Label x:Name="userGreeting" Text="Welcome" FontSize="13" TextColor="#d1d5db" />
                 </VerticalStackLayout>
-            </Frame>
+                <Button Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" Text="Logout" Clicked="OnLogoutClicked" BackgroundColor="#ef4444" TextColor="White" CornerRadius="8" VerticalOptions="Center" Padding="12,6"/>
+            </Grid>
+        </Frame>
 
-            <CollectionView x:Name="todoLV" SelectionMode="Single" SelectionChanged="TodoLV_OnItemSelected" BackgroundColor="Transparent">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Frame Margin="0,4" Padding="12" CornerRadius="10" BackgroundColor="#ffffff" BorderColor="#e5e7eb" HasShadow="False">
-                            <Grid ColumnDefinitions="*,auto,auto" RowDefinitions="auto,auto">
-                                <Label Grid.Row="0" Grid.Column="0" Text="{Binding Name}" FontAttributes="Bold" FontSize="16" TextColor="#111827" />
-                                <Label Grid.Row="1" Grid.Column="0" Text="{Binding Notes}" FontSize="12" TextColor="#6b7280" />
-                                <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Text="Done" BackgroundColor="#10b981" TextColor="White" CornerRadius="6" CommandParameter="{Binding ID}" Clicked="MarkDoneToDoItem" Padding="10,6" VerticalOptions="Center"/>
-                                <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" Text="Delete" BackgroundColor="#ef4444" TextColor="White" CornerRadius="6" CommandParameter="{Binding ID}" Clicked="DeleteToDoItem" Padding="10,6" VerticalOptions="Center"/>
-                            </Grid>
-                        </Frame>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
+        <!-- Content Section -->
+        <ScrollView>
+            <VerticalStackLayout Spacing="14" Padding="16">
+                <VerticalStackLayout Spacing="4">
+                    <Label Text="Add a new task" FontSize="14" TextColor="#6b7280" FontAttributes="Bold" />
+                    <Frame BackgroundColor="#ffffff" BorderColor="#e5e7eb" CornerRadius="12" Padding="14" HasShadow="False">
+                        <VerticalStackLayout Spacing="10">
+                            <Entry x:Name="titleEntry" Placeholder="Task title" BackgroundColor="#f9fafb" Padding="12,10" FontSize="14"/>
+                            <Editor x:Name="detailsEditor" Placeholder="Details (optional)" HeightRequest="90" BackgroundColor="#f9fafb" Padding="12,10" FontSize="13"/>
+                            <HorizontalStackLayout Spacing="8">
+                                <Button x:Name="addBtn" Text="Add Task" Clicked="AddToDoItem" BackgroundColor="#111827" TextColor="White" CornerRadius="8" HorizontalOptions="Fill" FontAttributes="Bold"/>
+                                <Button x:Name="editBtn" IsVisible="False" Text="Save Changes" Clicked="EditToDoItem" BackgroundColor="#2563eb" TextColor="White" CornerRadius="8" HorizontalOptions="Fill" FontAttributes="Bold"/>
+                                <Button x:Name="cancelBtn" IsVisible="False" Text="Cancel" Clicked="CancelEdit" BackgroundColor="#e5e7eb" TextColor="#111827" CornerRadius="8" HorizontalOptions="Fill" FontAttributes="Bold"/>
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Frame>
+                </VerticalStackLayout>
 
-        </VerticalStackLayout>
-    </ScrollView>
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Active Tasks" FontSize="14" TextColor="#6b7280" FontAttributes="Bold" />
+                    <CollectionView x:Name="todoLV" SelectionMode="Single" SelectionChanged="TodoLV_OnItemSelected" BackgroundColor="Transparent">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Frame Margin="0,6" Padding="14" CornerRadius="12" BackgroundColor="#ffffff" BorderColor="#e5e7eb" HasShadow="False">
+                                    <Grid ColumnDefinitions="*,auto,auto" RowDefinitions="auto,auto" ColumnSpacing="10" RowSpacing="4">
+                                        <Label Grid.Row="0" Grid.Column="0" Text="{Binding Name}" FontAttributes="Bold" FontSize="15" TextColor="#111827" LineBreakMode="WordWrap" />
+                                        <Label Grid.Row="1" Grid.Column="0" Text="{Binding Notes}" FontSize="13" TextColor="#6b7280" LineBreakMode="WordWrap" />
+                                        <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Text="✓" BackgroundColor="#10b981" TextColor="White" CornerRadius="8" CommandParameter="{Binding ID}" Clicked="MarkDoneToDoItem" Padding="12,8" FontAttributes="Bold" VerticalOptions="Center" FontSize="16"/>
+                                        <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="2" Text="×" BackgroundColor="#ef4444" TextColor="White" CornerRadius="8" CommandParameter="{Binding ID}" Clicked="DeleteToDoItem" Padding="12,8" FontAttributes="Bold" VerticalOptions="Center" FontSize="18"/>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                    <Label x:Name="emptyLabel" Text="No tasks yet. Add one to get started!" FontSize="13" TextColor="#9ca3af" HorizontalOptions="Center" Margin="0,16" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+    </VerticalStackLayout>
 </ContentPage>

@@ -36,14 +36,21 @@ public partial class MainPage : ContentPage
         if (!userId.HasValue || userId <= 0)
         {
             // User not logged in, go back to auth
-            await Shell.Current.GoToAsync("//AuthPage");
+            await Shell.Current.GoToAsync("AuthPage");
             return;
         }
 
         _userId = userId.Value;
 
+        // Load user display name
+        var displayName = await SessionStorage.GetUserDisplayNameAsync();
+        userGreeting.Text = $"Welcome, {displayName}!";
+
         // Load active tasks from API
         await LoadTasksAsync("active");
+
+        // Show/hide empty state
+        emptyLabel.IsVisible = items.Count == 0;
     }
 
     /// <summary>
@@ -71,6 +78,7 @@ public partial class MainPage : ContentPage
                     };
                     items.Add(toDoItem);
                 }
+                emptyLabel.IsVisible = items.Count == 0;
             }
         }
         catch (Exception ex)
@@ -272,5 +280,18 @@ public partial class MainPage : ContentPage
     {
         titleEntry.Text = string.Empty;
         detailsEditor.Text = string.Empty;
+    }
+
+    /// <summary>
+    /// Handle logout
+    /// </summary>
+    private async void OnLogoutClicked(object sender, EventArgs e)
+    {
+        var confirmed = await DisplayAlert("Logout", "Are you sure you want to logout?", "Yes", "No");
+        if (confirmed)
+        {
+            await SessionStorage.ClearSessionAsync();
+            await Shell.Current.GoToAsync("AuthPage");
+        }
     }
 }

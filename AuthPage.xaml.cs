@@ -46,7 +46,7 @@ public partial class AuthPage : ContentPage
                 );
 
                 // Navigate to main page
-                await Shell.Current.GoToAsync("//MainPage");
+                await Shell.Current.GoToAsync("MainPage");
             }
             else
             {
