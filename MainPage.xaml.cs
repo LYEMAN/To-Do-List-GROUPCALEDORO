@@ -31,26 +31,38 @@ public partial class MainPage : ContentPage
     {
         base.OnAppearing();
 
-        // Check if user is logged in
-        var userId = await SessionStorage.GetUserIdAsync();
-        if (!userId.HasValue || userId <= 0)
+        try
         {
-            // User not logged in, go back to auth
-            await Shell.Current.GoToAsync("//AuthPage");
-            return;
+            System.Diagnostics.Debug.WriteLine("MainPage.OnAppearing called");
+
+            // Get current user ID (already validated by AppShell)
+            var userId = await SessionStorage.GetUserIdAsync();
+            if (!userId.HasValue || userId <= 0)
+            {
+                System.Diagnostics.Debug.WriteLine("MainPage: No valid user ID found");
+                return;
+            }
+
+            _userId = userId.Value;
+
+            System.Diagnostics.Debug.WriteLine($"MainPage: UserId = {_userId}, loading tasks...");
+
+            // Load user display name
+            var displayName = await SessionStorage.GetUserDisplayNameAsync();
+            userGreeting.Text = $"Welcome, {displayName ?? "User"}!";
+
+            // Load active tasks from API
+            await LoadTasksAsync("active");
+
+            // Show/hide empty state
+            emptyLabel.IsVisible = items.Count == 0;
+            System.Diagnostics.Debug.WriteLine($"MainPage: Loaded {items.Count} tasks");
         }
-
-        _userId = userId.Value;
-
-        // Load user display name
-        var displayName = await SessionStorage.GetUserDisplayNameAsync();
-        userGreeting.Text = $"Welcome, {displayName}!";
-
-        // Load active tasks from API
-        await LoadTasksAsync("active");
-
-        // Show/hide empty state
-        emptyLabel.IsVisible = items.Count == 0;
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"MainPage.OnAppearing Error: {ex}");
+            await DisplayAlert("Error", $"Failed to load page: {ex.Message}", "OK");
+        }
     }
 
     /// <summary>
@@ -60,14 +72,23 @@ public partial class MainPage : ContentPage
     {
         try
         {
+            System.Diagnostics.Debug.WriteLine($"LoadTasksAsync START - Loading {status} tasks for userId {_userId}");
+
             var response = await _apiService.GetTasksAsync(_userId, status);
 
-            items.Clear();
+            System.Diagnostics.Debug.WriteLine($"LoadTasksAsync - API Response: Success={response?.Success}, Data Count={response?.Data?.Count}, Message={response?.Message}");
 
-            if (response.Success && response.Data != null)
+            items.Clear();
+            System.Diagnostics.Debug.WriteLine($"LoadTasksAsync - Cleared items collection");
+
+            if (response != null && response.Success && response.Data != null)
             {
+                System.Diagnostics.Debug.WriteLine($"LoadTasksAsync - Processing {response.Data.Count} tasks from API");
+
                 foreach (var apiTask in response.Data)
                 {
+                    System.Diagnostics.Debug.WriteLine($"LoadTasksAsync - Adding task: Id={apiTask.Id}, Name={apiTask.ItemName}, Status={apiTask.Status}");
+
                     // Convert API TaskItem to ToDoItem
                     var toDoItem = new ToDoItem
                     {
@@ -78,11 +99,27 @@ public partial class MainPage : ContentPage
                     };
                     items.Add(toDoItem);
                 }
-                emptyLabel.IsVisible = items.Count == 0;
+
+                System.Diagnostics.Debug.WriteLine($"LoadTasksAsync - Successfully added {items.Count} items to collection");
             }
+            else if (response != null)
+            {
+                System.Diagnostics.Debug.WriteLine($"LoadTasksAsync - API Response Error: {response.Message}");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"LoadTasksAsync - Response is null!");
+            }
+
+            emptyLabel.IsVisible = items.Count == 0;
+            System.Diagnostics.Debug.WriteLine($"LoadTasksAsync END - Total items: {items.Count}, Empty label visible: {emptyLabel.IsVisible}");
         }
         catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"LoadTasksAsync ERROR: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"LoadTasksAsync ERROR STACKTRACE: {ex.StackTrace}");
+            items.Clear();
+            emptyLabel.IsVisible = true;
             await DisplayAlert("Error", $"Failed to load tasks: {ex.Message}", "OK");
         }
     }
@@ -93,39 +130,54 @@ public partial class MainPage : ContentPage
     private async void AddToDoItem(object sender, EventArgs e)
     {
         if (string.IsNullOrWhiteSpace(titleEntry.Text))
+        {
+            await DisplayAlert("Error", "Please enter a task title", "OK");
             return;
+        }
 
         try
         {
+            var taskName = titleEntry.Text.Trim();
+            var taskDescription = detailsEditor.Text?.Trim() ?? "";
+
             var response = await _apiService.AddTaskAsync(
                 _userId,
-                titleEntry.Text,
-                detailsEditor.Text ?? ""
+                taskName,
+                taskDescription
             );
 
-            if (response.Success && response.Data != null)
+            if (response != null && response.Success && response.Data != null)
             {
+                // Verify data is not empty
+                if (string.IsNullOrWhiteSpace(response.Data.ItemName))
+                {
+                    await DisplayAlert("Error", "API returned empty task name. Please try again.", "OK");
+                    return;
+                }
+
                 // Add to local list
                 var item = new ToDoItem
                 {
                     ID = response.Data.Id,
-                    Name = response.Data.ItemName,
-                    Notes = response.Data.ItemDescription,
+                    Name = response.Data.ItemName ?? taskName,
+                    Notes = response.Data.ItemDescription ?? taskDescription,
                     Done = false
                 };
 
                 items.Add(item);
+                emptyLabel.IsVisible = items.Count == 0;
                 ClearInputs();
 
                 await DisplayAlert("Success", "Task added successfully", "OK");
             }
             else
             {
-                await DisplayAlert("Error", response.Message ?? "Failed to add task", "OK");
+                await DisplayAlert("Error", response?.Message ?? "Failed to add task", "OK");
             }
         }
         catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"AddToDoItem Error: {ex}");
             await DisplayAlert("Error", $"Error adding task: {ex.Message}", "OK");
         }
     }
@@ -243,9 +295,9 @@ public partial class MainPage : ContentPage
     /// <summary>
     /// Handle item selection for editing
     /// </summary>
-    private void TodoLV_OnItemSelected(object sender, SelectedItemChangedEventArgs e)
+    private void TodoLV_OnItemSelected(object sender, SelectionChangedEventArgs e)
     {
-        selectedItem = e.SelectedItem as ToDoItem;
+        selectedItem = e.CurrentSelection.FirstOrDefault() as ToDoItem;
 
         if (selectedItem == null)
             return;
@@ -293,5 +345,14 @@ public partial class MainPage : ContentPage
             await SessionStorage.ClearSessionAsync();
             await Shell.Current.GoToAsync("//AuthPage");
         }
+    }
+
+    /// <summary>
+    /// Manual refresh button
+    /// </summary>
+    private async void OnRefreshClicked(object sender, EventArgs e)
+    {
+        System.Diagnostics.Debug.WriteLine("Refresh button clicked");
+        await LoadTasksAsync("active");
     }
 }

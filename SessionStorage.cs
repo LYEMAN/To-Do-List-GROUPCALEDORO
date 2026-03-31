@@ -130,10 +130,10 @@ namespace MauiApp2
         {
             try
             {
-                SafeRemove(UserIdKey);
-                SafeRemove(FirstNameKey);
-                SafeRemove(LastNameKey);
-                SafeRemove(EmailKey);
+                await SafeRemoveAsync(UserIdKey);
+                await SafeRemoveAsync(FirstNameKey);
+                await SafeRemoveAsync(LastNameKey);
+                await SafeRemoveAsync(EmailKey);
             }
             catch (Exception ex)
             {
@@ -208,6 +208,12 @@ namespace MauiApp2
                     Debug.WriteLine($"Preferences.Remove failed for '{key}': {prefEx.Message}");
                 }
             }
+        }
+
+        private static Task SafeRemoveAsync(string key)
+        {
+            SafeRemove(key);
+            return Task.CompletedTask;
         }
     }
 }

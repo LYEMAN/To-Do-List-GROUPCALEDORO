@@ -3,29 +3,33 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Class="MauiApp2.MainPage"
+    Title="To Do"
     BackgroundColor="#f7f8fa">
 
-    <VerticalStackLayout Spacing="0">
+    <Grid RowDefinitions="auto,*">
         <!-- Header Section -->
-        <Frame BackgroundColor="#1f2937" BorderColor="#1f2937" CornerRadius="0" Padding="20" HasShadow="False" Margin="0">
+        <Frame Grid.Row="0" BackgroundColor="#1f2937" BorderColor="#1f2937" CornerRadius="0" Margin="0" HasShadow="False">
             <Grid ColumnDefinitions="*,auto" RowDefinitions="auto,auto">
                 <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="4">
                     <Label Text="My Tasks" FontSize="24" FontAttributes="Bold" TextColor="#ffffff" />
                     <Label x:Name="userGreeting" Text="Welcome" FontSize="13" TextColor="#d1d5db" />
                 </VerticalStackLayout>
-                <Button Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" Text="Logout" Clicked="OnLogoutClicked" BackgroundColor="#ef4444" TextColor="White" CornerRadius="8" VerticalOptions="Center" Padding="12,6"/>
+                <StackLayout Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" Spacing="8" VerticalOptions="Center">
+                    <Button Text="↻ Refresh" Clicked="OnRefreshClicked" BackgroundColor="#ffffff" TextColor="#1f2937" CornerRadius="8" Padding="12,6" FontAttributes="Bold"/>
+                    <Button Text="Logout" Clicked="OnLogoutClicked" BackgroundColor="#ef4444" TextColor="White" CornerRadius="8" Padding="12,6" FontAttributes="Bold"/>
+                </StackLayout>
             </Grid>
         </Frame>
 
-        <!-- Content Section -->
-        <ScrollView>
+        <!-- Content Section - Scrollable -->
+        <ScrollView Grid.Row="1">
             <VerticalStackLayout Spacing="14" Padding="16">
                 <VerticalStackLayout Spacing="4">
                     <Label Text="Add a new task" FontSize="14" TextColor="#6b7280" FontAttributes="Bold" />
-                    <Frame BackgroundColor="#ffffff" BorderColor="#e5e7eb" CornerRadius="12" Padding="14" HasShadow="False">
+                    <Frame BackgroundColor="#ffffff" BorderColor="#e5e7eb" CornerRadius="12" Margin="0,0,0,0" HasShadow="False">
                         <VerticalStackLayout Spacing="10">
-                            <Entry x:Name="titleEntry" Placeholder="Task title" BackgroundColor="#f9fafb" Padding="12,10" FontSize="14"/>
-                            <Editor x:Name="detailsEditor" Placeholder="Details (optional)" HeightRequest="90" BackgroundColor="#f9fafb" Padding="12,10" FontSize="13"/>
+                            <Entry x:Name="titleEntry" Placeholder="Task title" BackgroundColor="#f9fafb" Margin="12,10" FontSize="14"/>
+                            <Editor x:Name="detailsEditor" Placeholder="Details (optional)" HeightRequest="90" BackgroundColor="#f9fafb" Margin="12,10" FontSize="13"/>
                             <HorizontalStackLayout Spacing="8">
                                 <Button x:Name="addBtn" Text="Add Task" Clicked="AddToDoItem" BackgroundColor="#111827" TextColor="White" CornerRadius="8" HorizontalOptions="Fill" FontAttributes="Bold"/>
                                 <Button x:Name="editBtn" IsVisible="False" Text="Save Changes" Clicked="EditToDoItem" BackgroundColor="#2563eb" TextColor="White" CornerRadius="8" HorizontalOptions="Fill" FontAttributes="Bold"/>
@@ -40,7 +44,7 @@
                     <CollectionView x:Name="todoLV" SelectionMode="Single" SelectionChanged="TodoLV_OnItemSelected" BackgroundColor="Transparent">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Frame Margin="0,6" Padding="14" CornerRadius="12" BackgroundColor="#ffffff" BorderColor="#e5e7eb" HasShadow="False">
+                                <Frame Margin="0,6" CornerRadius="12" BackgroundColor="#ffffff" BorderColor="#e5e7eb" HasShadow="False" Padding="14">
                                     <Grid ColumnDefinitions="*,auto,auto" RowDefinitions="auto,auto" ColumnSpacing="10" RowSpacing="4">
                                         <Label Grid.Row="0" Grid.Column="0" Text="{Binding Name}" FontAttributes="Bold" FontSize="15" TextColor="#111827" LineBreakMode="WordWrap" />
                                         <Label Grid.Row="1" Grid.Column="0" Text="{Binding Notes}" FontSize="13" TextColor="#6b7280" LineBreakMode="WordWrap" />
@@ -55,5 +59,5 @@
                 </VerticalStackLayout>
             </VerticalStackLayout>
         </ScrollView>
-    </VerticalStackLayout>
+    </Grid>
 </ContentPage>

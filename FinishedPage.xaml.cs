@@ -20,17 +20,40 @@ public partial class FinishedPage : ContentPage
     {
         base.OnAppearing();
 
-        // Check if user is logged in
-        var userId = await SessionStorage.GetUserIdAsync();
-        if (!userId.HasValue || userId <= 0)
+        try
         {
-            await Shell.Current.GoToAsync("//AuthPage");
-            return;
+            System.Diagnostics.Debug.WriteLine("FinishedPage.OnAppearing called");
+
+            // Get current user ID (already validated by AppShell)
+            var userId = await SessionStorage.GetUserIdAsync();
+            if (!userId.HasValue || userId <= 0)
+            {
+                System.Diagnostics.Debug.WriteLine("FinishedPage: No valid user ID found");
+                return;
+            }
+
+            _userId = userId.Value;
+
+            System.Diagnostics.Debug.WriteLine($"FinishedPage: UserId = {_userId}, loading incomplete tasks...");
+
+            // Load completed tasks from API
+            await LoadTasksAsync("inactive");
+
+            System.Diagnostics.Debug.WriteLine($"FinishedPage: Loaded {items.Count} completed tasks");
         }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"FinishedPage.OnAppearing Error: {ex}");
+            await DisplayAlert("Error", $"Failed to load page: {ex.Message}", "OK");
+        }
+    }
 
-        _userId = userId.Value;
-
-        // Load completed tasks from API
+    /// <summary>
+    /// Manual refresh button
+    /// </summary>
+    private async void OnRefreshClicked(object sender, EventArgs e)
+    {
+        System.Diagnostics.Debug.WriteLine("Refresh button clicked");
         await LoadTasksAsync("inactive");
     }
 
@@ -43,12 +66,18 @@ public partial class FinishedPage : ContentPage
         {
             var response = await _apiService.GetTasksAsync(_userId, status);
 
+            System.Diagnostics.Debug.WriteLine($"FinishedPage.LoadTasksAsync - Status: {status}, Response Success: {response?.Success}, Data Count: {response?.Data?.Count}");
+
             items.Clear();
 
-            if (response.Success && response.Data != null)
+            if (response != null && response.Success && response.Data != null)
             {
+                System.Diagnostics.Debug.WriteLine($"Loading {response.Data.Count} completed tasks");
+
                 foreach (var apiTask in response.Data)
                 {
+                    System.Diagnostics.Debug.WriteLine($"Task: Id={apiTask.Id}, Name={apiTask.ItemName}, Status={apiTask.Status}");
+
                     var toDoItem = new ToDoItem
                     {
                         ID = apiTask.Id,
@@ -58,11 +87,20 @@ public partial class FinishedPage : ContentPage
                     };
                     items.Add(toDoItem);
                 }
-                emptyLabel.IsVisible = items.Count == 0;
             }
+            else if (response != null)
+            {
+                System.Diagnostics.Debug.WriteLine($"API Response Error: {response.Message}");
+            }
+
+            System.Diagnostics.Debug.WriteLine($"Final items count: {items.Count}");
+            emptyLabel.IsVisible = items.Count == 0;
         }
         catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"LoadTasksAsync Error: {ex}");
+            items.Clear();
+            emptyLabel.IsVisible = true;
             await DisplayAlert("Error", $"Failed to load completed tasks: {ex.Message}", "OK");
         }
     }
@@ -81,6 +119,7 @@ public partial class FinishedPage : ContentPage
                     if (response.Success)
                     {
                         items.Remove(item);
+                        emptyLabel.IsVisible = items.Count == 0;
                         await DisplayAlert("Success", "Task deleted successfully", "OK");
                     }
                     else
@@ -91,6 +130,39 @@ public partial class FinishedPage : ContentPage
                 catch (Exception ex)
                 {
                     await DisplayAlert("Error", $"Error deleting task: {ex.Message}", "OK");
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Undo completed task - mark it as active again
+    /// </summary>
+    private async void UndoToDoItem(object sender, EventArgs e)
+    {
+        if (sender is Button btn && btn.CommandParameter is int id)
+        {
+            var item = items.FirstOrDefault(x => x.ID == id);
+            if (item != null)
+            {
+                try
+                {
+                    var response = await _apiService.ChangeTaskStatusAsync(id, "active");
+
+                    if (response.Success)
+                    {
+                        items.Remove(item);
+                        emptyLabel.IsVisible = items.Count == 0;
+                        await DisplayAlert("Success", "Task restored to active", "OK");
+                    }
+                    else
+                    {
+                        await DisplayAlert("Error", response.Message ?? "Failed to restore task", "OK");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await DisplayAlert("Error", $"Error restoring task: {ex.Message}", "OK");
                 }
             }
         }

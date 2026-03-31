@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace MauiApp2
@@ -136,54 +137,70 @@ namespace MauiApp2
         // TASK ENDPOINTS
         // ============================================
 
-        /// <summary>
-        /// Get tasks for a user with specific status
-        /// GET /getItems_action.php?user_id={userId}&status={status}
-        /// status: 'active' or 'inactive'
-        /// </summary>
-        public async Task<ApiResponse<List<TaskItem>>> GetTasksAsync(int userId, string status = "active")
+    /// <summary>
+    /// Get tasks for a user with specific status
+    /// GET /getItems_action.php?user_id={userId}&status={status}
+    /// status: 'active' or 'inactive'
+    /// </summary>
+    public async Task<ApiResponse<List<TaskItem>>> GetTasksAsync(int userId, string status = "active")
+    {
+        try
         {
-            try
+            var encodedStatus = Uri.EscapeDataString(status);
+            var url = $"{_baseUrl}/getItems_action.php?user_id={userId}&status={encodedStatus}";
+
+            var response = await _httpClient.GetAsync(url);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            System.Diagnostics.Debug.WriteLine($"GetTasksAsync Response: {responseContent}");
+
+            if (response.IsSuccessStatusCode)
             {
-                var encodedStatus = Uri.EscapeDataString(status);
-                var url = $"{_baseUrl}/getItems_action.php?user_id={userId}&status={encodedStatus}";
+                // Parse the response which has data as an object with numbered keys
+                using var doc = JsonDocument.Parse(responseContent);
+                var root = doc.RootElement;
 
-                var response = await _httpClient.GetAsync(url);
-                var responseContent = await response.Content.ReadAsStringAsync();
+                var tasks = new List<TaskItem>();
 
-                if (response.IsSuccessStatusCode)
+                if (root.TryGetProperty("data", out var dataElement) && dataElement.ValueKind == JsonValueKind.Object)
                 {
-                    // API might return array or object with data property
-                    var result = JsonSerializer.Deserialize<List<TaskItem>>(responseContent, _jsonOptions)
-                        ?? JsonSerializer.Deserialize<dynamic>(responseContent, _jsonOptions) as List<TaskItem>;
+                    // Convert object with numbered keys to list
+                    foreach (var prop in dataElement.EnumerateObject())
+                    {
+                        var task = JsonSerializer.Deserialize<TaskItem>(prop.Value.GetRawText(), _jsonOptions);
+                        if (task != null)
+                            tasks.Add(task);
+                    }
+                }
 
-                    return new ApiResponse<List<TaskItem>>
-                    {
-                        Success = true,
-                        Data = result ?? new List<TaskItem>(),
-                        Message = "Tasks retrieved successfully"
-                    };
-                }
-                else
+                return new ApiResponse<List<TaskItem>>
                 {
-                    return new ApiResponse<List<TaskItem>>
-                    {
-                        Success = false,
-                        Data = new List<TaskItem>(),
-                        Message = "Failed to retrieve tasks"
-                    };
-                }
+                    Success = true,
+                    Data = tasks,
+                    Message = "Tasks retrieved successfully"
+                };
             }
-            catch (Exception ex)
+            else
             {
                 return new ApiResponse<List<TaskItem>>
                 {
                     Success = false,
                     Data = new List<TaskItem>(),
-                    Message = $"Error: {ex.Message}"
+                    Message = "Failed to retrieve tasks"
                 };
             }
         }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"GetTasksAsync Error: {ex}");
+            return new ApiResponse<List<TaskItem>>
+            {
+                Success = false,
+                Data = new List<TaskItem>(),
+                Message = $"Error: {ex.Message}"
+            };
+        }
+    }
 
         /// <summary>
         /// Add a new task for a user
@@ -206,9 +223,23 @@ namespace MauiApp2
                 var response = await _httpClient.PostAsync($"{_baseUrl}/addItem_action.php", content);
                 var responseContent = await response.Content.ReadAsStringAsync();
 
+                System.Diagnostics.Debug.WriteLine($"AddTaskAsync Response Status: {response.StatusCode}");
+                System.Diagnostics.Debug.WriteLine($"AddTaskAsync Response Content: {responseContent}");
+
                 if (response.IsSuccessStatusCode)
                 {
-                    var result = JsonSerializer.Deserialize<TaskItem>(responseContent, _jsonOptions);
+                    // Parse response which contains data inside a "data" property
+                    using var doc = JsonDocument.Parse(responseContent);
+                    var root = doc.RootElement;
+
+                    TaskItem? result = null;
+                    if (root.TryGetProperty("data", out var dataElement))
+                    {
+                        result = JsonSerializer.Deserialize<TaskItem>(dataElement.GetRawText(), _jsonOptions);
+                    }
+
+                    System.Diagnostics.Debug.WriteLine($"Deserialized TaskItem: Id={result?.Id}, ItemName={result?.ItemName}, Status={result?.Status}");
+
                     return new ApiResponse<TaskItem>
                     {
                         Success = true,
@@ -227,6 +258,7 @@ namespace MauiApp2
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"AddTaskAsync Exception: {ex}");
                 return new ApiResponse<TaskItem>
                 {
                     Success = false,
@@ -239,7 +271,7 @@ namespace MauiApp2
         /// Update task details (name and description)
         /// PUT /editItem_action.php
         /// </summary>
-        public async Task<ApiResponse<TaskItem>> UpdateTaskAsync(int itemId, string itemName, string itemDescription)
+        public async Task<ApiResponse<bool>> UpdateTaskAsync(int itemId, string itemName, string itemDescription)
         {
             try
             {
@@ -261,19 +293,20 @@ namespace MauiApp2
                 var response = await _httpClient.SendAsync(request);
                 var responseContent = await response.Content.ReadAsStringAsync();
 
+                System.Diagnostics.Debug.WriteLine($"UpdateTaskAsync Response: {responseContent}");
+
                 if (response.IsSuccessStatusCode)
                 {
-                    var result = JsonSerializer.Deserialize<TaskItem>(responseContent, _jsonOptions);
-                    return new ApiResponse<TaskItem>
+                    return new ApiResponse<bool>
                     {
                         Success = true,
-                        Data = result,
+                        Data = true,
                         Message = "Task updated successfully"
                     };
                 }
                 else
                 {
-                    return new ApiResponse<TaskItem>
+                    return new ApiResponse<bool>
                     {
                         Success = false,
                         Message = ExtractErrorMessage(responseContent) ?? "Failed to update task"
@@ -282,7 +315,8 @@ namespace MauiApp2
             }
             catch (Exception ex)
             {
-                return new ApiResponse<TaskItem>
+                System.Diagnostics.Debug.WriteLine($"UpdateTaskAsync Exception: {ex}");
+                return new ApiResponse<bool>
                 {
                     Success = false,
                     Message = $"Error: {ex.Message}"
@@ -295,7 +329,7 @@ namespace MauiApp2
         /// PUT /statusItem_action.php
         /// status: 'active' or 'inactive'
         /// </summary>
-        public async Task<ApiResponse<TaskItem>> ChangeTaskStatusAsync(int itemId, string status)
+        public async Task<ApiResponse<bool>> ChangeTaskStatusAsync(int itemId, string status)
         {
             try
             {
@@ -316,19 +350,20 @@ namespace MauiApp2
                 var response = await _httpClient.SendAsync(request);
                 var responseContent = await response.Content.ReadAsStringAsync();
 
+                System.Diagnostics.Debug.WriteLine($"ChangeTaskStatusAsync Response: {responseContent}");
+
                 if (response.IsSuccessStatusCode)
                 {
-                    var result = JsonSerializer.Deserialize<TaskItem>(responseContent, _jsonOptions);
-                    return new ApiResponse<TaskItem>
+                    return new ApiResponse<bool>
                     {
                         Success = true,
-                        Data = result,
+                        Data = true,
                         Message = $"Task marked as {status}"
                     };
                 }
                 else
                 {
-                    return new ApiResponse<TaskItem>
+                    return new ApiResponse<bool>
                     {
                         Success = false,
                         Message = ExtractErrorMessage(responseContent) ?? "Failed to change task status"
@@ -337,7 +372,8 @@ namespace MauiApp2
             }
             catch (Exception ex)
             {
-                return new ApiResponse<TaskItem>
+                System.Diagnostics.Debug.WriteLine($"ChangeTaskStatusAsync Exception: {ex}");
+                return new ApiResponse<bool>
                 {
                     Success = false,
                     Message = $"Error: {ex.Message}"
@@ -431,9 +467,13 @@ namespace MauiApp2
     /// </summary>
     public class UserSignUpResponse
     {
+        [JsonPropertyName("id")]
         public int Id { get; set; }
+        [JsonPropertyName("first_name")]
         public string? FirstName { get; set; }
+        [JsonPropertyName("last_name")]
         public string? LastName { get; set; }
+        [JsonPropertyName("email")]
         public string? Email { get; set; }
     }
 
@@ -442,10 +482,51 @@ namespace MauiApp2
     /// </summary>
     public class UserSignInResponse
     {
+        [JsonPropertyName("id")]
         public int Id { get; set; }
+        [JsonPropertyName("fname")]
         public string? FirstName { get; set; }
+        [JsonPropertyName("lname")]
         public string? LastName { get; set; }
+        [JsonPropertyName("email")]
         public string? Email { get; set; }
+    }
+
+    /// <summary>
+    /// Custom JSON converter to handle string values that might be numbers or other types
+    /// </summary>
+    public class FlexibleStringConverter : JsonConverter<string>
+    {
+        public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            switch (reader.TokenType)
+            {
+                case JsonTokenType.String:
+                    return reader.GetString();
+                case JsonTokenType.Number:
+                    if (reader.TryGetInt32(out var intValue))
+                        return intValue.ToString();
+                    if (reader.TryGetInt64(out var longValue))
+                        return longValue.ToString();
+                    return reader.GetDouble().ToString();
+                case JsonTokenType.True:
+                    return "true";
+                case JsonTokenType.False:
+                    return "false";
+                case JsonTokenType.Null:
+                    return null;
+                default:
+                    return null;
+            }
+        }
+
+        public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options)
+        {
+            if (value == null)
+                writer.WriteNullValue();
+            else
+                writer.WriteStringValue(value);
+        }
     }
 
     /// <summary>
@@ -453,12 +534,18 @@ namespace MauiApp2
     /// </summary>
     public class TaskItem
     {
+        [JsonPropertyName("item_id")]
         public int Id { get; set; }
+        [JsonPropertyName("item_name")]
         public string? ItemName { get; set; }
+        [JsonPropertyName("item_description")]
         public string? ItemDescription { get; set; }
+        [JsonPropertyName("status")]
+        [JsonConverter(typeof(FlexibleStringConverter))]
         public string? Status { get; set; } // 'active' or 'inactive'
+        [JsonPropertyName("user_id")]
         public int UserId { get; set; }
-        public DateTime? CreatedAt { get; set; }
+        [JsonPropertyName("timemodified")]
         public DateTime? UpdatedAt { get; set; }
     }
 }
