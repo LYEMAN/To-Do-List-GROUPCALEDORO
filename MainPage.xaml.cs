@@ -148,13 +148,6 @@ public partial class MainPage : ContentPage
 
             if (response != null && response.Success && response.Data != null)
             {
-                // Verify data is not empty
-                if (string.IsNullOrWhiteSpace(response.Data.ItemName))
-                {
-                    await DisplayAlert("Error", "API returned empty task name. Please try again.", "OK");
-                    return;
-                }
-
                 // Add to local list
                 var item = new ToDoItem
                 {
@@ -190,19 +183,28 @@ public partial class MainPage : ContentPage
         if (selectedItem == null)
             return;
 
+        if (string.IsNullOrWhiteSpace(titleEntry.Text))
+        {
+            await DisplayAlert("Error", "Please enter a task title", "OK");
+            return;
+        }
+
         try
         {
+            var taskName = titleEntry.Text.Trim();
+            var taskDescription = detailsEditor.Text?.Trim() ?? string.Empty;
+
             var response = await _apiService.UpdateTaskAsync(
                 selectedItem.ID,
-                titleEntry.Text,
-                detailsEditor.Text ?? ""
+                taskName,
+                taskDescription
             );
 
             if (response.Success)
             {
                 // Update local item
-                selectedItem.Name = titleEntry.Text;
-                selectedItem.Notes = detailsEditor.Text;
+                selectedItem.Name = taskName;
+                selectedItem.Notes = taskDescription;
 
                 await DisplayAlert("Success", "Task updated successfully", "OK");
                 ResetEditMode();

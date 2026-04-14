@@ -63,6 +63,16 @@ namespace MauiApp2
                 if (response.IsSuccessStatusCode)
                 {
                     var result = JsonSerializer.Deserialize<UserSignUpResponse>(responseContent, _jsonOptions);
+
+                    if (result == null || result.Id <= 0)
+                    {
+                        return new ApiResponse<UserSignUpResponse>
+                        {
+                            Success = false,
+                            Message = ExtractErrorMessage(responseContent) ?? "Sign up failed"
+                        };
+                    }
+
                     return new ApiResponse<UserSignUpResponse>
                     {
                         Success = true,
@@ -107,6 +117,16 @@ namespace MauiApp2
                 if (response.IsSuccessStatusCode)
                 {
                     var result = JsonSerializer.Deserialize<UserSignInResponse>(responseContent, _jsonOptions);
+
+                    if (result == null || result.Id <= 0)
+                    {
+                        return new ApiResponse<UserSignInResponse>
+                        {
+                            Success = false,
+                            Message = ExtractErrorMessage(responseContent) ?? "Account does not exist"
+                        };
+                    }
+
                     return new ApiResponse<UserSignInResponse>
                     {
                         Success = true,
@@ -168,7 +188,7 @@ namespace MauiApp2
                     foreach (var prop in dataElement.EnumerateObject())
                     {
                         var task = JsonSerializer.Deserialize<TaskItem>(prop.Value.GetRawText(), _jsonOptions);
-                        if (task != null)
+                        if (task != null && task.UserId == userId)
                             tasks.Add(task);
                     }
                 }
@@ -393,6 +413,9 @@ namespace MauiApp2
 
                 var request = new HttpRequestMessage(HttpMethod.Delete, url);
                 var response = await _httpClient.SendAsync(request);
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                System.Diagnostics.Debug.WriteLine($"DeleteTaskAsync Response: {responseContent}");
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -408,7 +431,7 @@ namespace MauiApp2
                     return new ApiResponse<bool>
                     {
                         Success = false,
-                        Message = "Failed to delete task"
+                        Message = ExtractErrorMessage(responseContent) ?? "Failed to delete task"
                     };
                 }
             }

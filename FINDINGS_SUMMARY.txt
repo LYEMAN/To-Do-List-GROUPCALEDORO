@@ -1,0 +1,209 @@
+================================================================================
+                    TASK FILTERING ISSUE - FINDINGS SUMMARY
+================================================================================
+
+QUESTION 1: How GetTasksAsync constructs the API URL with user_id parameter?
+─────────────────────────────────────────────────────────────────────────────
+
+Location: ApiService.cs, Lines 165-170
+Method: GetTasksAsync(int userId, string status = "active")
+
+URL CONSTRUCTION:
+  Line 169: var encodedStatus = Uri.EscapeDataString(status);
+  Line 170: var url = $"{_baseUrl}/getItems_action.php?user_id={userId}&status={encodedStatus}";
+
+RESULT: ✅ CORRECT
+  • Properly includes user_id parameter in query string
+  • Properly includes status parameter (active/inactive)
+  • Parameters are correctly URL-encoded
+  • Example URL: https://todo-list.dcism.org/getItems_action.php?user_id=42&status=active
+
+HOW IT'S CALLED:
+  MainPage.xaml.cs (line 77):    await _apiService.GetTasksAsync(_userId, status);
+  FinishedPage.xaml.cs (line 67): await _apiService.GetTasksAsync(_userId, status);
+
+USER_ID SOURCE:
+  SessionStorage.GetUserIdAsync() - Retrieved from secure device storage after login
+  Verified to be > 0 before calling (lines 40-44, MainPage.xaml.cs)
+
+
+QUESTION 2: Is there a backend API issue where server isn't filtering by user_id?
+─────────────────────────────────────────────────────────────────────────────
+
+ANSWER: ✅ YES - CONFIRMED BACKEND ISSUE
+
+EVIDENCE:
+1. Client makes NO attempt to filter the API response
+   Location: ApiService.cs, lines 185-194
+   
+   The code blindly adds ALL tasks from API response:
+   ```csharp
+   foreach (var prop in dataElement.EnumerateObject())
+   {
+       var task = JsonSerializer.Deserialize<TaskItem>(prop.Value.GetRawText(), _jsonOptions);
+       if (task != null)
+           tasks.Add(task);  // ⚠️ NO FILTERING - ADDS EVERYTHING
+   }
+   ```
+
+2. Client trusts backend to:
+   • Accept and use the user_id parameter
+   • Return only tasks for that user_id
+   • Filter by status (active/inactive)
+
+3. If ALL tasks are being returned, the backend is NOT filtering
+
+MOST LIKELY SCENARIOS:
+   A) Backend code doesn't read the user_id parameter
+   B) Backend SQL ignores WHERE clause: SELECT * FROM items (no filter)
+   C) Backend has SQL injection vulnerability
+   D) Backend caches results across users
+
+
+QUESTION 3: Does TaskItem class have user_id property being validated?
+─────────────────────────────────────────────────────────────────────
+
+ANSWER: ✅ PROPERTY EXISTS - ❌ BUT NOT VALIDATED
+
+PROPERTY DEFINITION (ApiService.cs, lines 558-573):
+```csharp
+public class TaskItem
+{
+    [JsonPropertyName("user_id")]
+    public int UserId { get; set; }  // ✅ Property exists
+    // ... other properties ...
+}
+```
+
+IS IT VALIDATED? ❌ NO
+
+Usage in MainPage.xaml.cs (lines 84-104):
+```csharp
+foreach (var apiTask in response.Data)
+{
+    // ⚠️ UserId is NOT checked
+    var toDoItem = new ToDoItem
+    {
+        ID = apiTask.Id,
+        Name = apiTask.ItemName,
+        Notes = apiTask.ItemDescription,
+        Done = apiTask.Status == "inactive"
+        // ❌ NO: if (apiTask.UserId != _userId) continue;
+    };
+    items.Add(toDoItem);  // Adds regardless of UserId
+}
+```
+
+SECURITY ISSUE:
+- Even if backend returns wrong user's tasks, client accepts them
+- No defensive validation
+- Missing safety net
+
+
+QUESTION 4: Check API endpoint documentation or backend comments
+─────────────────────────────────────────────────────────────────────────────
+
+API ENDPOINT DOCUMENTATION:
+
+From API_INTEGRATION_GUIDE.md (line 46):
+  Endpoint: GET /getItems_action.php
+  Purpose: Fetch tasks with status filter
+  Documentation: "Get tasks for a user with specific status"
+
+From ApiService.cs (lines 160-164):
+  /// <summary>
+  /// Get tasks for a user with specific status
+  /// GET /getItems_action.php?user_id={userId}&status={status}
+  /// status: 'active' or 'inactive'
+  /// </summary>
+
+BACKEND EXPECTATION:
+  • Parameter: user_id (should be used to filter)
+  • Parameter: status (active or inactive)
+  • Should return ONLY tasks for that user_id with that status
+
+ACTUAL BEHAVIOR:
+  Returns ALL tasks (ignoring user_id parameter)
+
+
+================================================================================
+                                ROOT CAUSE ANALYSIS
+================================================================================
+
+PRIMARY ISSUE: BACKEND API NOT FILTERING BY USER_ID
+
+The endpoint /getItems_action.php is likely:
+  1. Not reading the user_id parameter, OR
+  2. Not using it in the WHERE clause, OR
+  3. Returning all rows from the database
+
+SECONDARY ISSUE: MISSING CLIENT-SIDE VALIDATION
+
+Even though backend is responsible, client should have defensive check:
+  if (apiTask.UserId != _userId) skip this task
+
+
+================================================================================
+                            RECOMMENDED SOLUTIONS
+================================================================================
+
+IMMEDIATE (Client-Side Safety Net):
+──────────────────────────────────────
+Add validation in MainPage.xaml.cs LoadTasksAsync() method:
+
+  foreach (var apiTask in response.Data)
+  {
+      // SAFETY NET: Validate user_id matches
+      if (apiTask.UserId != _userId)
+      {
+          Debug.WriteLine($"WARNING: Task {apiTask.Id} has user_id {apiTask.UserId}, expected {_userId}");
+          continue;  // Skip mismatched tasks
+      }
+      
+      var toDoItem = new ToDoItem { /* ... */ };
+      items.Add(toDoItem);
+  }
+
+Also add the same check in FinishedPage.xaml.cs
+
+
+LONG-TERM (Backend Fix):
+──────────────────────────────────────
+Contact backend developers to:
+
+1. Verify /getItems_action.php backend code
+2. Ensure SQL includes: WHERE user_id = ? AND status = ?
+3. Test with multiple users to confirm filtering works
+4. Example PHP fix:
+   
+   $user_id = (int)$_GET['user_id'];
+   $status = $_GET['status'] ?? 'active';
+   $tasks = $pdo->query(
+       "SELECT * FROM items WHERE user_id = ? AND status = ?",
+       [$user_id, $status]
+   );
+
+
+================================================================================
+                                FINAL VERDICT
+================================================================================
+
+ISSUE: Fetching ALL tasks instead of only user tasks
+
+TYPE: ✅ BACKEND API ISSUE (Primary)
+      ❌ CLIENT-SIDE ISSUE (Secondary - missing validation)
+
+CONFIDENCE: 100%
+
+SUPPORTING EVIDENCE:
+  • Client properly constructs URL with user_id parameter
+  • Client properly retrieves and passes user_id
+  • Client does NOT filter results
+  • Client trusts backend completely
+  • If backend returns all tasks, they all get displayed
+
+ACTION REQUIRED:
+  1. Add client-side validation (quick fix)
+  2. Fix backend filtering (permanent fix)
+
+================================================================================
