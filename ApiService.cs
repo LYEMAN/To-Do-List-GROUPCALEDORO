@@ -113,10 +113,11 @@ namespace MauiApp2
 
                 var response = await _httpClient.GetAsync(url);
                 var responseContent = await response.Content.ReadAsStringAsync();
+                System.Diagnostics.Debug.WriteLine($"SignInAsync Response: {responseContent}");
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var result = JsonSerializer.Deserialize<UserSignInResponse>(responseContent, _jsonOptions);
+                    var result = ParseSignInUser(responseContent);
 
                     if (result == null || result.Id <= 0)
                     {
@@ -467,6 +468,88 @@ namespace MauiApp2
                 }
             }
             catch { /* Ignore parsing errors */ }
+            return null;
+        }
+
+        private UserSignInResponse? ParseSignInUser(string jsonContent)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(jsonContent);
+                var userElement = doc.RootElement;
+
+                if (userElement.ValueKind == JsonValueKind.Object &&
+                    userElement.TryGetProperty("data", out var dataElement))
+                {
+                    if (dataElement.ValueKind == JsonValueKind.Object)
+                    {
+                        userElement = dataElement;
+                    }
+                    else if (dataElement.ValueKind == JsonValueKind.Array && dataElement.GetArrayLength() > 0)
+                    {
+                        userElement = dataElement[0];
+                    }
+                }
+
+                if (userElement.ValueKind != JsonValueKind.Object)
+                    return null;
+
+                var id = ReadInt(userElement, "id", "user_id", "userid");
+                if (id <= 0)
+                    return null;
+
+                return new UserSignInResponse
+                {
+                    Id = id,
+                    FirstName = ReadString(userElement, "fname", "first_name", "firstname"),
+                    LastName = ReadString(userElement, "lname", "last_name", "lastname"),
+                    Email = ReadString(userElement, "email")
+                };
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static int ReadInt(JsonElement element, params string[] propertyNames)
+        {
+            foreach (var propertyName in propertyNames)
+            {
+                if (!element.TryGetProperty(propertyName, out var valueElement))
+                    continue;
+
+                if (valueElement.ValueKind == JsonValueKind.Number && valueElement.TryGetInt32(out var numberValue))
+                    return numberValue;
+
+                if (valueElement.ValueKind == JsonValueKind.String &&
+                    int.TryParse(valueElement.GetString(), out var stringValue))
+                {
+                    return stringValue;
+                }
+            }
+
+            return 0;
+        }
+
+        private static string? ReadString(JsonElement element, params string[] propertyNames)
+        {
+            foreach (var propertyName in propertyNames)
+            {
+                if (!element.TryGetProperty(propertyName, out var valueElement))
+                    continue;
+
+                if (valueElement.ValueKind == JsonValueKind.String)
+                    return valueElement.GetString();
+
+                if (valueElement.ValueKind == JsonValueKind.Number ||
+                    valueElement.ValueKind == JsonValueKind.True ||
+                    valueElement.ValueKind == JsonValueKind.False)
+                {
+                    return valueElement.ToString();
+                }
+            }
+
             return null;
         }
     }

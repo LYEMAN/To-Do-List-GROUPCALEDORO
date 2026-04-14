@@ -345,7 +345,10 @@ public partial class MainPage : ContentPage
         if (confirmed)
         {
             await SessionStorage.ClearSessionAsync();
-            await Shell.Current.GoToAsync("//AuthPage");
+            if (Shell.Current is AppShell appShell)
+                await appShell.NavigateToAuthAsync();
+            else
+                await Shell.Current.GoToAsync(AppShell.AuthRoute);
         }
     }
 

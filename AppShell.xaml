@@ -6,9 +6,9 @@
     xmlns:local="clr-namespace:MauiApp2"
     Title="To Do List">
 
-    <ShellContent Title="Auth" ContentTemplate="{DataTemplate local:AuthPage}" Route="AuthPage" />
+    <ShellContent Title="Auth" ContentTemplate="{DataTemplate local:AuthPage}" Route="AuthPage" FlyoutItemIsVisible="False" />
 
-    <TabBar>
+    <TabBar x:Name="MainTabsTabBar" Route="MainTabs" FlyoutItemIsVisible="False">
         <ShellContent Title="To Do" Icon="dotnet_bot.svg" ContentTemplate="{DataTemplate local:MainPage}" Route="MainPage" />
         <ShellContent Title="Finished" Icon="check.svg" ContentTemplate="{DataTemplate local:FinishedPage}" Route="FinishedPage" />
     </TabBar>

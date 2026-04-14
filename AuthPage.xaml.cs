@@ -66,7 +66,10 @@ public partial class AuthPage : ContentPage
                 );
 
                 // Navigate to main page
-                await Shell.Current.GoToAsync("//MainPage");
+                if (Shell.Current is AppShell appShell)
+                    await appShell.NavigateToMainAsync();
+                else
+                    await Shell.Current.GoToAsync(AppShell.MainRoute);
             }
             else
             {
@@ -131,7 +134,10 @@ public partial class AuthPage : ContentPage
                         loginResponse.Data.Email ?? ""
                     );
 
-                    await Shell.Current.GoToAsync("//MainPage");
+                    if (Shell.Current is AppShell appShell)
+                        await appShell.NavigateToMainAsync();
+                    else
+                        await Shell.Current.GoToAsync(AppShell.MainRoute);
                 }
             }
             else
